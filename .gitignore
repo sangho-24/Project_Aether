@@ -1,0 +1,19 @@
+# Unreal generated
+Binaries/
+Intermediate/
+DerivedDataCache/
+Saved/
+Build/
+
+# Unreal content (코드만 업로드)
+Content/
+
+# IDE/user files
+.vs/
+.idea/
+
+# Generated project files
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.suo
