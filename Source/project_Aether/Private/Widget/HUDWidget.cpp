@@ -32,7 +32,7 @@ void UHUDWidget::UpdateMP(float CurrentMP, float MaxMP)
 	if (MPText)
 	{
 		FString MPString = FString::Printf(TEXT("%.0f / %.0f"), CurrentMP, MaxMP);
-		HPText->SetText(FText::FromString(MPString));
+		MPText->SetText(FText::FromString(MPString));
 	}
 }
 
@@ -43,13 +43,13 @@ void UHUDWidget::UpdateStats(const UPlayerAttributeSet* AttributeSet)
 		return;
 	}
 
-	// const float MagicPower = AttributeSet->GetMagicPower();
+	const float MagicPower = AttributeSet->GetMagicPower();
 	const float Defense = AttributeSet->GetDefense();
 
 	if (MagicPowerText)
 	{
-		// const FString MagicPowerString = FString::Printf(TEXT("%.0f"), MagicPower);
-		// MagicPowerText->SetText(FText::FromString(MagicPowerString));
+		const FString MagicPowerString = FString::Printf(TEXT("%.0f"), MagicPower);
+		MagicPowerText->SetText(FText::FromString(MagicPowerString));
 	}
 
 	if (DefenseText)

@@ -36,9 +36,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
 	FGameplayAttributeData MaxHP;
 
-	// UPROPERTY(BlueprintReadOnly, Category = "Attributes")
-	// FGameplayAttributeData MagicPower;
-
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
 	FGameplayAttributeData Defense;
 

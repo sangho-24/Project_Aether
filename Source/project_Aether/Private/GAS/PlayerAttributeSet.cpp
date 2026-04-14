@@ -31,7 +31,7 @@ void UPlayerAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute
 }
 
 void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
-{
+{ 
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
 
 	// 최대 MP 변경 후 비율에 맞춰 현재 MP 재설정
