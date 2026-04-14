@@ -5,14 +5,19 @@
 #include "InputActionValue.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "InputActionValue.h"
+
 // 카메라 Include
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 // GAS Include
 #include "AbilitySystemComponent.h"
-// #include "GameplayAbilitySet.h"
-// #include "Attributes/BaseAttributeSet.h"
+#include "GAS/PlayerAttributeSet.h"
+
+
+namespace BaseConstants
+{
+	constexpr float ZoomSnapTolerance = 1.0f;
+}
 
 ABasePlayableCharacter::ABasePlayableCharacter()
 {
@@ -21,6 +26,7 @@ ABasePlayableCharacter::ABasePlayableCharacter()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
+	
 	// 캐릭터 이동 설정
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
@@ -44,12 +50,16 @@ ABasePlayableCharacter::ABasePlayableCharacter()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	
 	// AttributeSet은 나중에 Blueprint에서 설정하거나 여기서 생성 가능
-	// AttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("AttributeSet"));
+	AttributeSet = CreateDefaultSubobject<UPlayerAttributeSet>(TEXT("AttributeSet"));
 }
 
 void ABasePlayableCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	if (CameraBoom)
+	{
+		DesiredArmLength = CameraBoom->TargetArmLength;
+	}
 	// Enhanced Input System 설정
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -77,6 +87,30 @@ void ABasePlayableCharacter::BeginPlay()
 void ABasePlayableCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	if (bIsZoomInterpolating)
+	{
+		if (!CameraBoom)
+		{
+			bIsZoomInterpolating = false;
+			return;
+		}
+		const float CurrentArmLength = CameraBoom->TargetArmLength;
+		const float NewArmLength = FMath::FInterpTo(
+			CurrentArmLength,
+			DesiredArmLength,
+			DeltaTime,
+			ZoomInterpSpeed);
+		CameraBoom->TargetArmLength = NewArmLength;
+		if (FMath::IsNearlyEqual(
+		NewArmLength,
+		DesiredArmLength,
+		BaseConstants::ZoomSnapTolerance))
+		{
+			CameraBoom->TargetArmLength = DesiredArmLength;
+			bIsZoomInterpolating = false;
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -98,7 +132,10 @@ void ABasePlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		{
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABasePlayableCharacter::LookInput);
 		}
-		
+		if (ZoomAction)
+		{
+			EnhancedInputComponent->BindAction(ZoomAction, ETriggerEvent::Triggered, this, &ABasePlayableCharacter::ZoomInput);
+		}
 		// 점프 (GAS)
 		if (JumpAction)
 		{
@@ -140,6 +177,40 @@ void ABasePlayableCharacter::LookInput(const FInputActionValue& Value)
 	}
 }
 
+void ABasePlayableCharacter::ZoomInput(const FInputActionValue& Value)
+{
+	if (!Controller || !CameraBoom)
+		return;
+
+	const float ZoomAxis = Value.Get<float>();
+	if (FMath::IsNearlyZero(ZoomAxis)) 
+		return;
+		
+	DesiredArmLength = FMath::Clamp(
+	DesiredArmLength - ZoomAxis * ZoomStep,
+	MinArmLength,
+	MaxArmLength);
+	StartZoomInterp();
+}
+
+void ABasePlayableCharacter::StartZoomInterp()
+{
+	if (!CameraBoom)
+		return;
+
+	// 이미 목표에 도달했다면 즉시 스냅하고 보간 종료
+	if (FMath::IsNearlyEqual(
+		CameraBoom->TargetArmLength, 
+		DesiredArmLength, 
+		BaseConstants::ZoomSnapTolerance))
+	{
+		CameraBoom->TargetArmLength = DesiredArmLength;
+		bIsZoomInterpolating = false;
+		return;
+	}
+	bIsZoomInterpolating = true;
+}
+
 void ABasePlayableCharacter::JumpInput()
 {
 	// GAS를 사용하여 점프 활성화
@@ -164,4 +235,19 @@ void ABasePlayableCharacter::StopJumpingInput()
 UAbilitySystemComponent* ABasePlayableCharacter::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
+}
+
+UPlayerAttributeSet* ABasePlayableCharacter::GetPlayerAttributeSet() const
+{
+	return AttributeSet;
+}
+
+void ABasePlayableCharacter::SpawnFloatingDamage(float Amount, bool bIsHeal)
+{
+	UE_LOG(LogTemp, Log, TEXT("SpawnFloatingDamage: Amount=%.0f, IsHeal=%s"), Amount, bIsHeal ? TEXT("true") : TEXT("false"));
+}
+
+void ABasePlayableCharacter::Death(AActor* Killer)
+{
+	UE_LOG(LogTemp, Log, TEXT("Character died. Killer: %s"), Killer ? *Killer->GetName() : TEXT("None"));
 }

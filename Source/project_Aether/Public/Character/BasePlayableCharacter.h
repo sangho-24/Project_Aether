@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "AbilitySystemInterface.h"
+#include "Gameplay/ICombatInterface.h"
 #include "BasePlayableCharacter.generated.h"
 
 class UInputComponent;
@@ -13,9 +14,11 @@ class UInputAction;
 class UInputMappingContext;
 class USpringArmComponent;
 class UCameraComponent;
+class UAbilitySystemComponent;
+class UPlayerAttributeSet;
 
 UCLASS()
-class PROJECT_AETHER_API ABasePlayableCharacter : public ACharacter, public IAbilitySystemInterface
+class PROJECT_AETHER_API ABasePlayableCharacter : public ACharacter, public IAbilitySystemInterface, public ICombatInterface 
 {
 	GENERATED_BODY()
 
@@ -24,7 +27,6 @@ public:
 	ABasePlayableCharacter();
 
 protected:
-
 	// ===== 향상된 입력 =====
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* DefaultInputMappingContext;
@@ -36,6 +38,9 @@ protected:
 	UInputAction* LookAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* ZoomAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* JumpAction;
 	
 	// ===== 카메라 =====
@@ -45,12 +50,30 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* FollowCamera;
 	
+	// ===== 카메라 줌 =====
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float MinArmLength = 200.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float MaxArmLength = 600.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera|Zoom")
+	float DesiredArmLength = 400.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float ZoomStep = 80.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float ZoomInterpSpeed = 12.0f;
+	
+	bool bIsZoomInterpolating = false;
+	
 	// ===== GAS =====
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	UAbilitySystemComponent* AbilitySystemComponent;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
-	class UAttributeSet* AttributeSet;
+	UPlayerAttributeSet* AttributeSet;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Abilities")
 	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
@@ -67,10 +90,16 @@ protected:
 	// Enhanced Input 콜백
 	void MoveInput(const FInputActionValue& Value);
 	void LookInput(const FInputActionValue& Value);
+	void ZoomInput(const FInputActionValue& Value);
+	void StartZoomInterp();
 	void JumpInput();
 	void StopJumpingInput();
 
 public:	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	UPlayerAttributeSet* GetPlayerAttributeSet() const;
+	// ===== 인터페이스 함수 =====
+	virtual void SpawnFloatingDamage(float Amount, bool bIsHeal) override;
+	virtual void Death(AActor* Killer) override;
 };
