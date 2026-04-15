@@ -17,6 +17,7 @@ class UCameraComponent;
 class UAbilitySystemComponent;
 class UPlayerAttributeSet;
 class UGameplayAbility;
+class AFloatingDamageActor;
 
 UCLASS()
 class PROJECT_AETHER_API ABasePlayableCharacter : public ACharacter, public IAbilitySystemInterface, public ICombatInterface 
@@ -85,6 +86,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float SprintSpeed = 1000.0f;
 	
+	// ===== UI =====
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<AFloatingDamageActor> FloatingDamageActorClass;
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -101,6 +106,6 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UPlayerAttributeSet* GetPlayerAttributeSet() const;
 	// ===== 인터페이스 함수 =====
-	virtual void SpawnFloatingDamage(float Amount, bool bIsHeal) override;
+	virtual void SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical) override;
 	virtual void Death(AActor* Killer) override;
 };

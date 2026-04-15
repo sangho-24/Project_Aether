@@ -1,6 +1,7 @@
 
 #include "Character/BasePlayableCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/CapsuleComponent.h"
 // 입력 Include
 #include "InputActionValue.h"
 #include "EnhancedInputComponent.h"
@@ -11,6 +12,8 @@
 // GAS Include
 #include "AbilitySystemComponent.h"
 #include "GAS/PlayerAttributeSet.h"
+// UI Include
+#include "Character/FloatingDamageActor.h"
 
 
 namespace BaseConstants
@@ -241,9 +244,29 @@ UPlayerAttributeSet* ABasePlayableCharacter::GetPlayerAttributeSet() const
 	return AttributeSet;
 }
 
-void ABasePlayableCharacter::SpawnFloatingDamage(float Amount, bool bIsHeal)
+void ABasePlayableCharacter::SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical)
 {
 	UE_LOG(LogTemp, Log, TEXT("SpawnFloatingDamage: Amount=%.0f, IsHeal=%s"), Amount, bIsHeal ? TEXT("true") : TEXT("false"));
+	if (!FloatingDamageActorClass)
+		return;
+	
+	UWorld* World = GetWorld();
+	if (!World) 
+		return;
+	
+	const float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, CapsuleHalfHeight);
+	SpawnLocation += FVector(
+		FMath::RandRange(-30.f, 30.f),
+		FMath::RandRange(-30.f, 30.f),
+		0.f);
+	
+	AFloatingDamageActor* DamageActor = World->SpawnActor<AFloatingDamageActor>(
+	FloatingDamageActorClass, SpawnLocation,FRotator::ZeroRotator);
+	if (DamageActor)
+	{
+		DamageActor->Initialize(Amount, bIsHeal, bIsCritical);
+	}
 }
 
 void ABasePlayableCharacter::Death(AActor* Killer)

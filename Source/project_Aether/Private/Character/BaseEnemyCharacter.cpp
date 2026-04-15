@@ -2,11 +2,13 @@
 #include "Character/BaseEnemyCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h" 
-// GAS
+// GAS Include
 #include "AbilitySystemComponent.h"
 #include "GAS/EnemyAttributeSet.h"
 #include "GameplayTagContainer.h"
-// AI
+// UI Include
+#include "Character/FloatingDamageActor.h"
+// AI Include
 #include "AIController.h"
 
 ABaseEnemyCharacter::ABaseEnemyCharacter()
@@ -66,12 +68,29 @@ UEnemyAttributeSet* ABaseEnemyCharacter::GetEnemyAttributeSet() const
 	return AttributeSet;
 }
 
-void ABaseEnemyCharacter::SpawnFloatingDamage(float Amount, bool bIsHeal)
+void ABaseEnemyCharacter::SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical)
 {
-	UE_LOG(LogTemp, Log, TEXT("[Enemy] SpawnFloatingDamage: Amount=%.0f, IsHeal=%s"),
-		Amount, bIsHeal ? TEXT("true") : TEXT("false"));
-
-	// TODO: 플로팅 텍스트 스폰 처리
+	UE_LOG(LogTemp, Log, TEXT("SpawnFloatingDamage: Amount=%.0f, IsHeal=%s"), Amount, bIsHeal ? TEXT("true") : TEXT("false"));
+	if (!FloatingDamageActorClass)
+		return;
+	
+	UWorld* World = GetWorld();
+	if (!World) 
+		return;
+	
+	const float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, CapsuleHalfHeight);
+	SpawnLocation += FVector(
+		FMath::RandRange(-30.f, 30.f),
+		FMath::RandRange(-30.f, 30.f),
+		0.f);
+	
+	AFloatingDamageActor* DamageActor = World->SpawnActor<AFloatingDamageActor>(
+	FloatingDamageActorClass, SpawnLocation,FRotator::ZeroRotator);
+	if (DamageActor)
+	{
+		DamageActor->Initialize(Amount, bIsHeal, bIsCritical);
+	}
 }
 
 void ABaseEnemyCharacter::Death(AActor* Killer)

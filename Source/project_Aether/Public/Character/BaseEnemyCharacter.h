@@ -11,6 +11,7 @@
 class UAbilitySystemComponent;
 class UEnemyAttributeSet;
 class UGameplayAbility;
+class AFloatingDamageActor;
 
 UCLASS()
 class PROJECT_AETHER_API ABaseEnemyCharacter : public ACharacter, public IAbilitySystemInterface, public ICombatInterface
@@ -21,6 +22,14 @@ public:
 	ABaseEnemyCharacter();
 	
 protected:
+	// ===== 이동 =====
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float WalkSpeed = 400.0f;
+
+	// ===== 상태 =====
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	bool bIsDead = false;
+	
 	// ===== GAS =====
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	UAbilitySystemComponent* AbilitySystemComponent;
@@ -30,14 +39,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
-
-	// ===== 이동 =====
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float WalkSpeed = 400.0f;
-
-	// ===== 상태 =====
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
-	bool bIsDead = false;
+	
+	// ===== UI =====
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<AFloatingDamageActor> FloatingDamageActorClass;
 	
 protected:
 	virtual void BeginPlay() override;
@@ -51,6 +56,6 @@ public:
 	UEnemyAttributeSet* GetEnemyAttributeSet() const;
 
 	// ===== ICombatInterface =====
-	virtual void SpawnFloatingDamage(float Amount, bool bIsHeal) override;
+	virtual void SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical) override;
 	virtual void Death(AActor* Killer) override;
 };

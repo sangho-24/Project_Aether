@@ -51,7 +51,7 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 		if (DamageDone < 0.0f) // 데미지
 		{
-			CombatTarget->SpawnFloatingDamage(FMath::Abs(DamageDone), false);
+			CombatTarget->SpawnFloatingDamage(FMath::Abs(DamageDone), false, false);
 
 			if (GetCurrentHP() <= 0.0f)
 			{
@@ -61,7 +61,7 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 		}
 		else if (DamageDone > 0.0f) // 힐
 		{
-			CombatTarget->SpawnFloatingDamage(DamageDone, true);
+			CombatTarget->SpawnFloatingDamage(DamageDone, true, false);
 		}
 	}
 }
