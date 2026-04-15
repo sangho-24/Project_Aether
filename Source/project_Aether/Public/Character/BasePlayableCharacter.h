@@ -16,6 +16,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UAbilitySystemComponent;
 class UPlayerAttributeSet;
+class UGameplayAbility;
 
 UCLASS()
 class PROJECT_AETHER_API ABasePlayableCharacter : public ACharacter, public IAbilitySystemInterface, public ICombatInterface 
@@ -76,7 +77,7 @@ protected:
 	UPlayerAttributeSet* AttributeSet;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Abilities")
-	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
+	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float WalkSpeed = 600.0f;

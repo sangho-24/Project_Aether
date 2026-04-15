@@ -14,4 +14,10 @@ class PROJECT_AETHER_API UEnemyAttributeSet : public UBaseAttributeSet
 {
 	GENERATED_BODY()
 	
+public:
+	UEnemyAttributeSet();
+
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
+
 };
