@@ -1,4 +1,3 @@
-
 #include "Character/BasePlayableCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -28,29 +27,29 @@ ABasePlayableCharacter::ABasePlayableCharacter()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
-	
+
 	// 캐릭터 이동 설정
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.0f;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = 300.0f;
-	
+
 	// 스프링암
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f;         // 카메라 거리
-	CameraBoom->bUsePawnControlRotation = true;   // 마우스 입력으로 붐 회전
+	CameraBoom->TargetArmLength = 400.0f; // 카메라 거리
+	CameraBoom->bUsePawnControlRotation = true; // 마우스 입력으로 붐 회전
 	// 카메라
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false; // 붐이 회전하므로 카메라는 고정
-	
+
 	// GAS 초기화
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
-	
+
 	// AttributeSet은 나중에 Blueprint에서 설정하거나 여기서 생성 가능
 	AttributeSet = CreateDefaultSubobject<UPlayerAttributeSet>(TEXT("AttributeSet"));
 }
@@ -89,7 +88,7 @@ void ABasePlayableCharacter::BeginPlay()
 void ABasePlayableCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
+
 	if (bIsZoomInterpolating)
 	{
 		if (!CameraBoom)
@@ -105,9 +104,9 @@ void ABasePlayableCharacter::Tick(float DeltaTime)
 			ZoomInterpSpeed);
 		CameraBoom->TargetArmLength = NewArmLength;
 		if (FMath::IsNearlyEqual(
-		NewArmLength,
-		DesiredArmLength,
-		BaseConstants::ZoomSnapTolerance))
+			NewArmLength,
+			DesiredArmLength,
+			BaseConstants::ZoomSnapTolerance))
 		{
 			CameraBoom->TargetArmLength = DesiredArmLength;
 			bIsZoomInterpolating = false;
@@ -120,32 +119,38 @@ void ABasePlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	if (UEnhancedInputComponent* EnhancedInputComponent = 
+	if (UEnhancedInputComponent* EnhancedInputComponent =
 		Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		// 이동
 		if (MoveAction)
 		{
-			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABasePlayableCharacter::MoveInput);
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this,
+			                                   &ABasePlayableCharacter::MoveInput);
 		}
 
 		// 카메라 시점
 		if (LookAction)
 		{
-			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABasePlayableCharacter::LookInput);
+			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this,
+			                                   &ABasePlayableCharacter::LookInput);
 		}
 		if (ZoomAction)
 		{
-			EnhancedInputComponent->BindAction(ZoomAction, ETriggerEvent::Triggered, this, &ABasePlayableCharacter::ZoomInput);
+			EnhancedInputComponent->BindAction(ZoomAction, ETriggerEvent::Triggered, this,
+			                                   &ABasePlayableCharacter::ZoomInput);
 		}
 		// 점프 (GAS)
 		if (JumpAction)
 		{
-			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ABasePlayableCharacter::JumpInput);
-			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ABasePlayableCharacter::StopJumpingInput);
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this,
+			                                   &ABasePlayableCharacter::JumpInput);
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this,
+			                                   &ABasePlayableCharacter::StopJumpingInput);
 		}
 	}
 }
+
 void ABasePlayableCharacter::MoveInput(const FInputActionValue& Value)
 {
 	if (Controller != nullptr)
@@ -157,7 +162,7 @@ void ABasePlayableCharacter::MoveInput(const FInputActionValue& Value)
 
 		const FVector ForwardDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		const FVector RightDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		
+
 		if (MovementVector.Y != 0.0f)
 			AddMovementInput(ForwardDir, MovementVector.Y);
 		if (MovementVector.X != 0.0f)
@@ -185,13 +190,13 @@ void ABasePlayableCharacter::ZoomInput(const FInputActionValue& Value)
 		return;
 
 	const float ZoomAxis = Value.Get<float>();
-	if (FMath::IsNearlyZero(ZoomAxis)) 
+	if (FMath::IsNearlyZero(ZoomAxis))
 		return;
-		
+
 	DesiredArmLength = FMath::Clamp(
-	DesiredArmLength - ZoomAxis * ZoomStep,
-	MinArmLength,
-	MaxArmLength);
+		DesiredArmLength - ZoomAxis * ZoomStep,
+		MinArmLength,
+		MaxArmLength);
 	StartZoomInterp();
 }
 
@@ -202,8 +207,8 @@ void ABasePlayableCharacter::StartZoomInterp()
 
 	// 이미 목표에 도달했다면 즉시 스냅하고 보간 종료
 	if (FMath::IsNearlyEqual(
-		CameraBoom->TargetArmLength, 
-		DesiredArmLength, 
+		CameraBoom->TargetArmLength,
+		DesiredArmLength,
 		BaseConstants::ZoomSnapTolerance))
 	{
 		CameraBoom->TargetArmLength = DesiredArmLength;
@@ -219,7 +224,7 @@ void ABasePlayableCharacter::JumpInput()
 	if (AbilitySystemComponent)
 	{
 		const bool bActivated = AbilitySystemComponent->TryActivateAbilitiesByTag(
-	FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Ability.Jump"))));
+			FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Ability.Jump"))));
 		UE_LOG(LogTemp, Warning, TEXT("Jump TryActivate result: %s"), bActivated ? TEXT("true") : TEXT("false"));
 	}
 	else
@@ -246,23 +251,24 @@ UPlayerAttributeSet* ABasePlayableCharacter::GetPlayerAttributeSet() const
 
 void ABasePlayableCharacter::SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical)
 {
-	UE_LOG(LogTemp, Log, TEXT("SpawnFloatingDamage: Amount=%.0f, IsHeal=%s"), Amount, bIsHeal ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogTemp, Log, TEXT("SpawnFloatingDamage: Amount=%.0f, IsHeal=%s"), Amount,
+	       bIsHeal ? TEXT("true") : TEXT("false"));
 	if (!FloatingDamageActorClass)
 		return;
-	
+
 	UWorld* World = GetWorld();
-	if (!World) 
+	if (!World)
 		return;
-	
+
 	const float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, CapsuleHalfHeight);
 	SpawnLocation += FVector(
 		FMath::RandRange(-30.f, 30.f),
 		FMath::RandRange(-30.f, 30.f),
 		0.f);
-	
+
 	AFloatingDamageActor* DamageActor = World->SpawnActor<AFloatingDamageActor>(
-	FloatingDamageActorClass, SpawnLocation,FRotator::ZeroRotator);
+		FloatingDamageActorClass, SpawnLocation, FRotator::ZeroRotator);
 	if (DamageActor)
 	{
 		DamageActor->Initialize(Amount, bIsHeal, bIsCritical);
@@ -272,4 +278,16 @@ void ABasePlayableCharacter::SpawnFloatingDamage(const float Amount, const bool 
 void ABasePlayableCharacter::Death(AActor* Killer)
 {
 	UE_LOG(LogTemp, Log, TEXT("Character died. Killer: %s"), Killer ? *Killer->GetName() : TEXT("None"));
+}
+
+FAbilitySkillData ABasePlayableCharacter::GetSkillDataForAbility(FGameplayTag AbilityTag)
+{
+	FAbilitySkillData* Found = AbilitySkillDataMap.Find(AbilityTag);
+	if (!Found)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[AnimInterface] '%s' 태그에 대한 스킬 데이터 없음"),
+			*AbilityTag.ToString());
+		return FAbilitySkillData{};  // 빈 구조체 반환
+	}
+	return *Found;
 }

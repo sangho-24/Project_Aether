@@ -7,6 +7,7 @@
 #include "InputActionValue.h"
 #include "AbilitySystemInterface.h"
 #include "Gameplay/ICombatInterface.h"
+#include "Gameplay/IAnimationInterface.h"
 #include "BasePlayableCharacter.generated.h"
 
 class UInputComponent;
@@ -20,7 +21,9 @@ class UGameplayAbility;
 class AFloatingDamageActor;
 
 UCLASS()
-class PROJECT_AETHER_API ABasePlayableCharacter : public ACharacter, public IAbilitySystemInterface, public ICombatInterface 
+class PROJECT_AETHER_API ABasePlayableCharacter 
+	: public ACharacter, public IAbilitySystemInterface, 
+		public ICombatInterface, public IAnimationInterface 
 {
 	GENERATED_BODY()
 
@@ -86,6 +89,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float SprintSpeed = 1000.0f;
 	
+	// ===== 애니메이션 ===== (BP에서 설정)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Abilities")
+	TMap<FGameplayTag, FAbilitySkillData> AbilitySkillDataMap;  // 몽타주 + 투사체 한번에 관리
+
 	// ===== UI =====
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<AFloatingDamageActor> FloatingDamageActorClass;
@@ -106,6 +113,10 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UPlayerAttributeSet* GetPlayerAttributeSet() const;
 	// ===== 인터페이스 함수 =====
+	// ICombatInterface
 	virtual void SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical) override;
 	virtual void Death(AActor* Killer) override;
+	// IAnimationInterface
+	virtual FAbilitySkillData GetSkillDataForAbility(FGameplayTag AbilityTag) override;
+
 };
