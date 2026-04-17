@@ -22,7 +22,7 @@ public:
 	float LifeTime = 1.5f;
 	
 protected:
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Setup")
 	UWidgetComponent* DamageWidgetComponent;
 
 protected:

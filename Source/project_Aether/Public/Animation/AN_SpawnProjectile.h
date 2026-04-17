@@ -13,13 +13,13 @@ class PROJECT_AETHER_API UAN_SpawnProjectile : public UAnimNotify
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile|Setup")
 	TSubclassOf<AActor> ProjectileClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile|Setup")
 	FName SpawnSocketName = NAME_None;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile|Setup")
 	float DamageMultiplier = 1.0f;
 	
 	virtual void Notify(USkeletalMeshComponent* MeshComp,

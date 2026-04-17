@@ -51,13 +51,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
 	float LifeSpan = 5.0f;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Setup")
 	TSubclassOf<UGameplayEffect> DamageEffect;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Setup")
 	FGameplayTag HitCueTag;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Setup")
 	FGameplayTag OverlapCueTag;
 	
 private:

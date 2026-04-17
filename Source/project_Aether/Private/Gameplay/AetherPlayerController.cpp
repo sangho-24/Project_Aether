@@ -60,7 +60,8 @@ void AAetherPlayerController::OnPossess(APawn* InPawn)
 
 void AAetherPlayerController::OnHPChanged(const FOnAttributeChangeData& Data)
 {
-	if (!HUDWidget) return;
+	if (!HUDWidget) 
+		return;
 	ABasePlayableCharacter* PlayableChar = Cast<ABasePlayableCharacter>(GetPawn());
 	if (UPlayerAttributeSet* AS = PlayableChar ? PlayableChar->GetPlayerAttributeSet() : nullptr)
 	{

@@ -16,7 +16,7 @@ class PROJECT_AETHER_API AAetherPlayerController : public APlayerController
 	GENERATED_BODY()
 	
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD|Setup")
 	TSubclassOf<UHUDWidget> HUDWidgetClass;
 	
 private:

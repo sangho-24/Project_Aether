@@ -6,12 +6,15 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
 #include "Gameplay/ICombatInterface.h"
+#include "GameplayEffectTypes.h"
 #include "BaseEnemyCharacter.generated.h"
 
 class UAbilitySystemComponent;
 class UEnemyAttributeSet;
 class UGameplayAbility;
 class AFloatingDamageActor;
+class UWidgetComponent;
+class UNameplateWidget;  
 
 UCLASS()
 class PROJECT_AETHER_API ABaseEnemyCharacter : public ACharacter, public IAbilitySystemInterface, public ICombatInterface
@@ -37,22 +40,32 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	UEnemyAttributeSet* AttributeSet;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Abilities")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Abilities|Setup")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 	
 	// ===== UI =====
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Setup")
 	TSubclassOf<AFloatingDamageActor> FloatingDamageActorClass;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	UWidgetComponent* NameplateWidgetComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Setup")
+	TSubclassOf<UUserWidget> NameplateWidgetClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info|Setup")
+	FString EnemyName = TEXT("Enemy"); 
+	
+	float CachedFadeDist = 2000.f;
 protected:
 	virtual void BeginPlay() override;
 
+	void OnHPChanged(const FOnAttributeChangeData& Data);
+
 public:	
 	virtual void Tick(float DeltaTime) override;
-
 	// ===== GAS =====
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	
 	UEnemyAttributeSet* GetEnemyAttributeSet() const;
 
 	// ===== ICombatInterface =====

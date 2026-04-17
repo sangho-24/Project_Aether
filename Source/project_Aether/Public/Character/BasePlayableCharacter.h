@@ -33,22 +33,22 @@ public:
 
 protected:
 	// ===== 향상된 입력 =====
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Setup")
 	UInputMappingContext* DefaultInputMappingContext;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Setup")
 	UInputAction* MoveInput;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Setup")
 	UInputAction* LookInput;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Setup")
 	UInputAction* ZoomInput;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Setup")
 	UInputAction* JumpInput;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Setup")
 	UInputAction* BasicSkillInput;
 	
 	// ===== 카메라 =====
@@ -83,7 +83,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	UPlayerAttributeSet* AttributeSet;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Abilities")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Abilities|Setup")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
@@ -93,7 +93,7 @@ protected:
 	float SprintSpeed = 1000.0f;
 	
 	// ===== 애니메이션 ===== (BP에서 설정)
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Abilities")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Abilities|Setup")
 	TMap<FGameplayTag, FAbilitySkillData> AbilitySkillDataMap;  // 몽타주 + 투사체 한번에 관리
 
 	UPROPERTY()
@@ -108,7 +108,7 @@ protected:
 	float NextDamageMultiplier = 1.0f;
 	
 	// ===== UI =====
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Setup")
 	TSubclassOf<AFloatingDamageActor> FloatingDamageActorClass;
 	
 protected:

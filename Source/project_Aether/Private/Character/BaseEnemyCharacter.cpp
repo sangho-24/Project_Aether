@@ -8,14 +8,14 @@
 #include "GameplayTagContainer.h"
 // UI Include
 #include "Actor/FloatingDamageActor.h"
+#include "Widget/NameplateWidget.h"
+#include "Components/WidgetComponent.h"
 // AI Include
 #include "AIController.h"
 
 ABaseEnemyCharacter::ABaseEnemyCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
-	// ===== AI 컨트롤러 자동 빙의 설정 =====
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	// ===== 이동 설정 =====
@@ -33,11 +33,22 @@ ABaseEnemyCharacter::ABaseEnemyCharacter()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	AttributeSet = CreateDefaultSubobject<UEnemyAttributeSet>(TEXT("AttributeSet"));
+	
+	// ===== Nameplate WidgetComponent 생성 =====
+	NameplateWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NameplateWidgetComponent"));
+	NameplateWidgetComponent->SetupAttachment(GetMesh());
+	// Screen Space로 설정하면 항상 카메라를 바라봄 TODO 이거 월드로 하면 더 자연스럽지 않을까?
+	NameplateWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+	NameplateWidgetComponent->SetDrawSize(FVector2D(200.f, 50.f));
 }
 
 void ABaseEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	const float CapsuleHalf = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	NameplateWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, CapsuleHalf * 2.4f));
+	
 	// GAS ActorInfo 초기화
 	if (AbilitySystemComponent)
 	{
@@ -50,12 +61,63 @@ void ABaseEnemyCharacter::BeginPlay()
 				AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, 0));
 			}
 		}
+		// ===== HP 델리게이트 등록 =====
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			UBaseAttributeSet::GetCurrentHPAttribute())
+			.AddUObject(this, &ABaseEnemyCharacter::OnHPChanged);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			UBaseAttributeSet::GetMaxHPAttribute())
+			.AddUObject(this, &ABaseEnemyCharacter::OnHPChanged);
+		
+	}
+	
+	// ===== Nameplate 위젯 초기화 =====
+	if (NameplateWidgetClass)
+	{
+		NameplateWidgetComponent->SetWidgetClass(NameplateWidgetClass);
+	}
+	if (UNameplateWidget* Nameplate = Cast<UNameplateWidget>(NameplateWidgetComponent->GetWidget()))
+	{
+		Nameplate->UpdateName(EnemyName);
+		CachedFadeDist = Nameplate->GetFadeDistance();
+		if (AttributeSet)
+		{
+			Nameplate->UpdateHP(AttributeSet->GetCurrentHP(), AttributeSet->GetMaxHP());
+		}
+	}
+	
+}
+
+void ABaseEnemyCharacter::OnHPChanged(const FOnAttributeChangeData& Data)
+{
+	if (UNameplateWidget* Nameplate = Cast<UNameplateWidget>(NameplateWidgetComponent->GetWidget()))
+	{
+		if (AttributeSet)
+		{
+			Nameplate->UpdateHP(AttributeSet->GetCurrentHP(), AttributeSet->GetMaxHP());
+		}
 	}
 }
 
 void ABaseEnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	if (!NameplateWidgetComponent) 
+		return;
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (!PC || !PC->GetPawn()) 
+		return;
+	
+	const float Dist = FVector::Dist(GetActorLocation(), PC->GetPawn()->GetActorLocation());
+	// 일정 거리 이상이면 숨김
+	NameplateWidgetComponent->SetVisibility(!bIsDead && Dist <= CachedFadeDist);
+	// 카메라를 바라보도록 빌보드 처리
+	FVector CameraLoc;
+	FRotator CameraRot;
+	PC->GetPlayerViewPoint(CameraLoc, CameraRot);
+	const FRotator LookAt = (CameraLoc - NameplateWidgetComponent->GetComponentLocation()).Rotation();
+	NameplateWidgetComponent->SetWorldRotation(LookAt);
 }
 
 UAbilitySystemComponent* ABaseEnemyCharacter::GetAbilitySystemComponent() const

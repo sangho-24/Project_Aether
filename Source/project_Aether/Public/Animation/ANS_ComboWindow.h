@@ -12,7 +12,7 @@ class PROJECT_AETHER_API UANS_ComboWindow : public UAnimNotifyState
 	
 public:
 	// 에디터에서 설정. 마지막 콤보면 비워둠 → 입력해도 무시
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo|Setup")
 	TObjectPtr<UAnimMontage> NextComboMontage;
 
 	virtual void NotifyBegin(USkeletalMeshComponent* MeshComp,
