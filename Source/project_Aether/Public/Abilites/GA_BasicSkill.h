@@ -29,10 +29,25 @@ public:
 		bool bWasCancelled) override;
 
 private:
-	// 애니메이션 콜백
-	UFUNCTION()
-	void OnMontageCompleted();
+	// 선입력 버퍼: 콤보 윈도우 전 입력 저장
+	bool bSaveCombo = false;
+	// 현재 콤보 윈도우 열림 여부
+	bool bIsComboWindowOpen = false;
+	// 콤보 전환 중 플래그 (이전 몽타주 중단 시 EndAbility 방지
+	bool bComboTransitioning = false;
 
-	UFUNCTION()
-	void OnMontageCancelled();
+	// 몽타주 재생 공통 함수
+	void PlayMontage(UAnimMontage* Montage);
+	// 콤보 실행 시도 (다음 몽타주 없으면 무시)
+	void TryNextCombo();
+
+	// 몽타주 콜백
+	UFUNCTION() void OnMontageCompleted();
+	UFUNCTION() void OnMontageCancelled();
+
+	// 이벤트 콜백
+	UFUNCTION() void OnSpawnProjectile(FGameplayEventData Payload);
+	UFUNCTION() void OnComboInput(FGameplayEventData Payload);
+	UFUNCTION() void OnComboWindowOpen(FGameplayEventData Payload);
+	UFUNCTION() void OnComboWindowClose(FGameplayEventData Payload);
 };

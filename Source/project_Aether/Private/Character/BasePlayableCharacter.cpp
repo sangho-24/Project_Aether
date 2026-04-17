@@ -1,6 +1,7 @@
 #include "Character/BasePlayableCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "AbilitySystemBlueprintLibrary.h"
 // 입력 Include
 #include "InputActionValue.h"
 #include "EnhancedInputComponent.h"
@@ -13,6 +14,8 @@
 #include "GAS/PlayerAttributeSet.h"
 // UI Include
 #include "Character/FloatingDamageActor.h"
+
+
 
 
 namespace BaseConstants
@@ -123,35 +126,41 @@ void ABasePlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		// 이동
-		if (MoveAction)
+		if (MoveInput)
 		{
-			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this,
-			                                   &ABasePlayableCharacter::MoveInput);
+			EnhancedInputComponent->BindAction(MoveInput, ETriggerEvent::Triggered, this,
+			                                   &ABasePlayableCharacter::MoveAction);
 		}
 
 		// 카메라 시점
-		if (LookAction)
+		if (LookInput)
 		{
-			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this,
-			                                   &ABasePlayableCharacter::LookInput);
+			EnhancedInputComponent->BindAction(LookInput, ETriggerEvent::Triggered, this,
+			                                   &ABasePlayableCharacter::LookAction);
 		}
-		if (ZoomAction)
+		if (ZoomInput)
 		{
-			EnhancedInputComponent->BindAction(ZoomAction, ETriggerEvent::Triggered, this,
-			                                   &ABasePlayableCharacter::ZoomInput);
+			EnhancedInputComponent->BindAction(ZoomInput, ETriggerEvent::Triggered, this,
+			                                   &ABasePlayableCharacter::ZoomAction);
 		}
 		// 점프 (GAS)
-		if (JumpAction)
+		if (JumpInput)
 		{
-			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this,
-			                                   &ABasePlayableCharacter::JumpInput);
-			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this,
-			                                   &ABasePlayableCharacter::StopJumpingInput);
+			EnhancedInputComponent->BindAction(JumpInput, ETriggerEvent::Started, this,
+			                                   &ABasePlayableCharacter::JumpAction);
+			EnhancedInputComponent->BindAction(JumpInput, ETriggerEvent::Completed, this,
+			                                   &ABasePlayableCharacter::StopJumpingAction);
+		}
+		// 스킬 (GAS)
+		if (BasicSkillInput)
+		{
+			EnhancedInputComponent->BindAction(BasicSkillInput, ETriggerEvent::Triggered, this,
+												&ABasePlayableCharacter::BasicSkillAction);
 		}
 	}
 }
 
-void ABasePlayableCharacter::MoveInput(const FInputActionValue& Value)
+void ABasePlayableCharacter::MoveAction(const FInputActionValue& Value)
 {
 	if (Controller != nullptr)
 	{
@@ -170,7 +179,7 @@ void ABasePlayableCharacter::MoveInput(const FInputActionValue& Value)
 	}
 }
 
-void ABasePlayableCharacter::LookInput(const FInputActionValue& Value)
+void ABasePlayableCharacter::LookAction(const FInputActionValue& Value)
 {
 	if (Controller != nullptr)
 	{
@@ -184,7 +193,7 @@ void ABasePlayableCharacter::LookInput(const FInputActionValue& Value)
 	}
 }
 
-void ABasePlayableCharacter::ZoomInput(const FInputActionValue& Value)
+void ABasePlayableCharacter::ZoomAction(const FInputActionValue& Value)
 {
 	if (!Controller || !CameraBoom)
 		return;
@@ -218,7 +227,7 @@ void ABasePlayableCharacter::StartZoomInterp()
 	bIsZoomInterpolating = true;
 }
 
-void ABasePlayableCharacter::JumpInput()
+void ABasePlayableCharacter::JumpAction()
 {
 	// GAS를 사용하여 점프 활성화
 	if (AbilitySystemComponent)
@@ -234,9 +243,32 @@ void ABasePlayableCharacter::JumpInput()
 	}
 }
 
-void ABasePlayableCharacter::StopJumpingInput()
+void ABasePlayableCharacter::StopJumpingAction()
 {
 	Super::StopJumping();
+}
+
+void ABasePlayableCharacter::BasicSkillAction()
+{
+	if (!AbilitySystemComponent) 
+		return;
+		
+    if (AbilitySystemComponent->HasMatchingGameplayTag(
+        FGameplayTag::RequestGameplayTag("State.Combo")))
+    {
+        // 이미 공격 중 → 콤보 입력 이벤트 전송
+        FGameplayEventData EventData;
+        UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+            this,
+            FGameplayTag::RequestGameplayTag("Event.BasicSkill.ComboInput"),
+            EventData);
+    }
+    else
+    {
+    	// 공격 중 아님 → 어빌리티 새로 발동
+    	AbilitySystemComponent->TryActivateAbilitiesByTag(
+			FGameplayTagContainer(FGameplayTag::RequestGameplayTag("Ability.BasicSkill")));
+    }   
 }
 
 UAbilitySystemComponent* ABasePlayableCharacter::GetAbilitySystemComponent() const
@@ -290,4 +322,34 @@ FAbilitySkillData ABasePlayableCharacter::GetSkillDataForAbility(FGameplayTag Ab
 		return FAbilitySkillData{};  // 빈 구조체 반환
 	}
 	return *Found;
+}
+
+void ABasePlayableCharacter::SetNextComboMontage(UAnimMontage* Montage)
+{
+	NextComboMontage = Montage;
+}
+
+UAnimMontage* ABasePlayableCharacter::GetNextComboMontage() const
+{
+	return NextComboMontage;
+}
+
+void ABasePlayableCharacter::SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass)
+{
+	NextProjectileClass = ProjectileClass;
+}
+
+void ABasePlayableCharacter::SetNextDamageMultiplier(float DamageMultiplier)
+{
+	NextDamageMultiplier = DamageMultiplier;
+}
+
+TSubclassOf<AActor> ABasePlayableCharacter::GetNextProjectileClass() const
+{
+	return NextProjectileClass;
+}
+
+float ABasePlayableCharacter::GetNextDamageMultiplier() const
+{
+	return NextDamageMultiplier;
 }

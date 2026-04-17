@@ -37,16 +37,19 @@ protected:
 	UInputMappingContext* DefaultInputMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* MoveAction;
+	UInputAction* MoveInput;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* LookAction;
+	UInputAction* LookInput;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* ZoomAction;
+	UInputAction* ZoomInput;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* JumpAction;
+	UInputAction* JumpInput;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* BasicSkillInput;
 	
 	// ===== 카메라 =====
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -93,6 +96,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Abilities")
 	TMap<FGameplayTag, FAbilitySkillData> AbilitySkillDataMap;  // 몽타주 + 투사체 한번에 관리
 
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> NextComboMontage = nullptr;
+	
+	UPROPERTY()
+	TSubclassOf<AActor> NextProjectileClass;
+
+	float NextDamageMultiplier = 1.0f;
+	
 	// ===== UI =====
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<AFloatingDamageActor> FloatingDamageActorClass;
@@ -101,12 +112,13 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	// Enhanced Input 콜백
-	void MoveInput(const FInputActionValue& Value);
-	void LookInput(const FInputActionValue& Value);
-	void ZoomInput(const FInputActionValue& Value);
+	void MoveAction(const FInputActionValue& Value);
+	void LookAction(const FInputActionValue& Value);
+	void ZoomAction(const FInputActionValue& Value);
 	void StartZoomInterp();
-	void JumpInput();
-	void StopJumpingInput();
+	void JumpAction();
+	void StopJumpingAction();
+	void BasicSkillAction();
 
 public:	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -118,5 +130,10 @@ public:
 	virtual void Death(AActor* Killer) override;
 	// IAnimationInterface
 	virtual FAbilitySkillData GetSkillDataForAbility(FGameplayTag AbilityTag) override;
-
+	virtual void SetNextComboMontage(UAnimMontage* Montage) override;
+	virtual UAnimMontage* GetNextComboMontage() const override;
+	virtual void SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass) override;
+	virtual void SetNextDamageMultiplier(float DamageMultiplier) override;
+	virtual TSubclassOf<AActor> GetNextProjectileClass() const override;
+	virtual float GetNextDamageMultiplier() const override;
 };
