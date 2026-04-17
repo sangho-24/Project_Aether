@@ -33,4 +33,7 @@ public:
 	virtual void SetNextDamageMultiplier(float DamageMultiplier) = 0;
 	virtual TSubclassOf<AActor> GetNextProjectileClass() const = 0;
 	virtual float GetNextDamageMultiplier() const = 0;
+	// 투사체 스폰 소켓
+	virtual void SetNextSpawnSocketName(FName SocketName) = 0;
+	virtual FName GetNextSpawnSocketName() const = 0;
 };

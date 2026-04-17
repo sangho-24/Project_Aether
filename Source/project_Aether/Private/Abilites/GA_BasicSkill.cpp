@@ -4,6 +4,7 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Actor/BaseProjectile.h"
 
 UGA_BasicSkill::UGA_BasicSkill()
 {
@@ -161,16 +162,45 @@ void UGA_BasicSkill::OnSpawnProjectile(FGameplayEventData Payload)
 	
 	TSubclassOf<AActor> ProjectileClass = AnimChar->GetNextProjectileClass();
 	const float DamageMult = AnimChar->GetNextDamageMultiplier();
+	const FName SocketName = AnimChar->GetNextSpawnSocketName();
 	if (!ProjectileClass)
 		return;
 	
-	// TODO 소켓 위치 추가해서 스폰하자
-	FVector SpawnLocation = AvatarActor->GetActorLocation()
-		+ AvatarActor->GetActorForwardVector() * 100.f;
+	FVector  SpawnLocation = AvatarActor->GetActorLocation();
 	FRotator SpawnRotation = AvatarActor->GetActorRotation();
 
-	AvatarActor->GetWorld()->SpawnActor<AActor>(
-		ProjectileClass, SpawnLocation, SpawnRotation);
+	if (!SocketName.IsNone())
+	{
+		if (USkeletalMeshComponent* Mesh =
+			AvatarActor->FindComponentByClass<USkeletalMeshComponent>())
+		{
+			if (Mesh->DoesSocketExist(SocketName))
+			{
+				SpawnLocation = Mesh->GetSocketLocation(SocketName);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning,
+					TEXT("[GA_BasicSkill] 소켓 '%s' 없음 → 캐릭터 위치 사용"), *SocketName.ToString());
+			}
+		}
+	}
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Instigator = Cast<APawn>(AvatarActor);
+	SpawnParams.Owner      = AvatarActor;
+
+	AActor* SpawnedActor = AvatarActor->GetWorld()->SpawnActor<AActor>(
+		ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
+
+
+	// ── 투사체 초기화 (ABaseProjectile 파생 클래스인 경우) ──
+	if (ABaseProjectile* Proj = Cast<ABaseProjectile>(SpawnedActor))
+	{
+		UAbilitySystemComponent* SourceASC =
+			CurrentActorInfo->AbilitySystemComponent.Get();
+		
+		Proj->InitProjectile(SourceASC, DamageMult);
+	}
 }
 
 void UGA_BasicSkill::OnComboInput(FGameplayEventData Payload)

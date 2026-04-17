@@ -28,6 +28,7 @@ public:
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, CurrentHP)
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, MaxHP)
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, Defense)
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, AttackPower)
 
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
@@ -39,6 +40,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
 	FGameplayAttributeData Defense;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	FGameplayAttributeData AttackPower;
+	
 	// UPROPERTY(BlueprintReadOnly, Category = "Attributes")
 	// FGameplayAttributeData Gold;
 

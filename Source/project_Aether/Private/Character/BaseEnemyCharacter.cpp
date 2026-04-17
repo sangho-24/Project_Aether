@@ -7,7 +7,7 @@
 #include "GAS/EnemyAttributeSet.h"
 #include "GameplayTagContainer.h"
 // UI Include
-#include "Character/FloatingDamageActor.h"
+#include "Actor/FloatingDamageActor.h"
 // AI Include
 #include "AIController.h"
 

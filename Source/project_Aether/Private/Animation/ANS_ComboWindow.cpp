@@ -10,6 +10,10 @@ void UANS_ComboWindow::NotifyBegin(USkeletalMeshComponent* MeshComp,
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner) return;
 
+	UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Owner);
+	if (!ASC)
+		return;
+	
 	// 다음 콤보 몽타주를 캐릭터에 저장 (nullptr이면 마지막 콤보)
 	if (IAnimationInterface* AnimChar = Cast<IAnimationInterface>(Owner))
 		AnimChar->SetNextComboMontage(NextComboMontage);
@@ -29,6 +33,10 @@ void UANS_ComboWindow::NotifyEnd(USkeletalMeshComponent* MeshComp,
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner) return;
 
+	UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Owner);
+	if (!ASC)
+		return;
+	
 	// 다음 콤보 몽타주 해제
 	if (IAnimationInterface* AnimChar = Cast<IAnimationInterface>(Owner))
 		AnimChar->SetNextComboMontage(nullptr);

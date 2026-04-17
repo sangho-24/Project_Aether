@@ -17,6 +17,9 @@ public:
 	TSubclassOf<AActor> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile")
+	FName SpawnSocketName = NAME_None;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile")
 	float DamageMultiplier = 1.0f;
 	
 	virtual void Notify(USkeletalMeshComponent* MeshComp,

@@ -101,6 +101,9 @@ protected:
 	
 	UPROPERTY()
 	TSubclassOf<AActor> NextProjectileClass;
+	
+	UPROPERTY()
+	FName NextSpawnSocketName;
 
 	float NextDamageMultiplier = 1.0f;
 	
@@ -136,4 +139,6 @@ public:
 	virtual void SetNextDamageMultiplier(float DamageMultiplier) override;
 	virtual TSubclassOf<AActor> GetNextProjectileClass() const override;
 	virtual float GetNextDamageMultiplier() const override;
+	virtual void SetNextSpawnSocketName(FName SocketName) override;
+	virtual FName GetNextSpawnSocketName() const override;
 };

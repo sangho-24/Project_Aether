@@ -8,7 +8,19 @@ public class project_Aether : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" ,"GameplayAbilities", "GameplayTags", "GameplayTasks","AIModule" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core", 
+			"CoreUObject", 
+			"Engine", 
+			"InputCore", 
+			"EnhancedInput" ,
+			"GameplayAbilities", 
+			"GameplayTags", 
+			"GameplayTasks",
+			"AIModule", 
+			"Niagara"
+		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

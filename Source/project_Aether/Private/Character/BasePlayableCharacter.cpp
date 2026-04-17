@@ -13,9 +13,7 @@
 #include "AbilitySystemComponent.h"
 #include "GAS/PlayerAttributeSet.h"
 // UI Include
-#include "Character/FloatingDamageActor.h"
-
-
+#include "Actor/FloatingDamageActor.h"
 
 
 namespace BaseConstants
@@ -155,7 +153,7 @@ void ABasePlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		if (BasicSkillInput)
 		{
 			EnhancedInputComponent->BindAction(BasicSkillInput, ETriggerEvent::Triggered, this,
-												&ABasePlayableCharacter::BasicSkillAction);
+			                                   &ABasePlayableCharacter::BasicSkillAction);
 		}
 	}
 }
@@ -250,25 +248,25 @@ void ABasePlayableCharacter::StopJumpingAction()
 
 void ABasePlayableCharacter::BasicSkillAction()
 {
-	if (!AbilitySystemComponent) 
+	if (!AbilitySystemComponent)
 		return;
-		
-    if (AbilitySystemComponent->HasMatchingGameplayTag(
-        FGameplayTag::RequestGameplayTag("State.Combo")))
-    {
-        // 이미 공격 중 → 콤보 입력 이벤트 전송
-        FGameplayEventData EventData;
-        UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-            this,
-            FGameplayTag::RequestGameplayTag("Event.BasicSkill.ComboInput"),
-            EventData);
-    }
-    else
-    {
-    	// 공격 중 아님 → 어빌리티 새로 발동
-    	AbilitySystemComponent->TryActivateAbilitiesByTag(
+
+	if (AbilitySystemComponent->HasMatchingGameplayTag(
+		FGameplayTag::RequestGameplayTag("State.Combo")))
+	{
+		// 이미 공격 중 → 콤보 입력 이벤트 전송
+		FGameplayEventData EventData;
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+			this,
+			FGameplayTag::RequestGameplayTag("Event.BasicSkill.ComboInput"),
+			EventData);
+	}
+	else
+	{
+		// 공격 중 아님 → 어빌리티 새로 발동
+		AbilitySystemComponent->TryActivateAbilitiesByTag(
 			FGameplayTagContainer(FGameplayTag::RequestGameplayTag("Ability.BasicSkill")));
-    }   
+	}
 }
 
 UAbilitySystemComponent* ABasePlayableCharacter::GetAbilitySystemComponent() const
@@ -318,8 +316,8 @@ FAbilitySkillData ABasePlayableCharacter::GetSkillDataForAbility(FGameplayTag Ab
 	if (!Found)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[AnimInterface] '%s' 태그에 대한 스킬 데이터 없음"),
-			*AbilityTag.ToString());
-		return FAbilitySkillData{};  // 빈 구조체 반환
+		       *AbilityTag.ToString());
+		return FAbilitySkillData{}; // 빈 구조체 반환
 	}
 	return *Found;
 }
@@ -352,4 +350,14 @@ TSubclassOf<AActor> ABasePlayableCharacter::GetNextProjectileClass() const
 float ABasePlayableCharacter::GetNextDamageMultiplier() const
 {
 	return NextDamageMultiplier;
+}
+
+void ABasePlayableCharacter::SetNextSpawnSocketName(FName SocketName)
+{
+	NextSpawnSocketName = SocketName;
+}
+
+FName ABasePlayableCharacter::GetNextSpawnSocketName() const
+{
+	return NextSpawnSocketName;
 }

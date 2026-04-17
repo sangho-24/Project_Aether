@@ -6,6 +6,7 @@ UBaseAttributeSet::UBaseAttributeSet()
 {
 	InitCurrentHP(100.0f);
 	InitMaxHP(100.0f);
+	InitAttackPower(0.0f);
 	InitDefense(0.0f);
 }
 
@@ -23,8 +24,12 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 		NewValue = FMath::Max(NewValue, 1.0f);
 		CachedHPPercent = GetCurrentHP() / GetMaxHP();
 	}
-	// 방어력 음수 방지
+	// 스탯 음수 방지
 	else if (Attribute == GetDefenseAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.0f);
+	}
+	else if (Attribute == GetAttackPowerAttribute())
 	{
 		NewValue = FMath::Max(NewValue, 0.0f);
 	}
@@ -33,10 +38,10 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
 	Super::PostGameplayEffectExecute(Data);
-	
 	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
 		SetCurrentHP(FMath::Clamp(GetCurrentHP(), 0.0f, GetMaxHP()));
+
 
 		AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
 		if (!TargetActor) 
