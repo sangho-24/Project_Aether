@@ -125,6 +125,7 @@ void ABasePlayableCharacter::Tick(float DeltaTime)
 		if (!IsValid(LockOnTarget) || LockOnTarget->GetIsDead())
 		{
 			bIsLockedOn = false;
+			// SetLockedOnTarget(nullptr);
 			LockOnTarget = nullptr;
 			AbilitySystemComponent->RemoveLooseGameplayTag(
 				FGameplayTag::RequestGameplayTag("State.LockedOn"));
@@ -134,6 +135,7 @@ void ABasePlayableCharacter::Tick(float DeltaTime)
 		if (FVector::Dist(GetActorLocation(), LockOnTarget->GetActorLocation()) > LockOnRadius)
 		{
 			bIsLockedOn = false;
+			// SetLockedOnTarget(nullptr);
 			LockOnTarget = nullptr;
 			AbilitySystemComponent->RemoveLooseGameplayTag(
 				FGameplayTag::RequestGameplayTag("State.LockedOn"));
@@ -319,6 +321,7 @@ void ABasePlayableCharacter::LockOnAction()
 	{
 		// 락온 해제
 		bIsLockedOn = false;
+		// SetLockedOnTarget(nullptr);
 		LockOnTarget = nullptr;
 		// GetCharacterMovement()->bOrientRotationToMovement = true;
 		UE_LOG(LogTemp, Log, TEXT("LockOn: 해제"));
@@ -330,8 +333,9 @@ void ABasePlayableCharacter::LockOnAction()
 	ABaseEnemyCharacter* BestTarget = FindLockOnTarget();
 	if (BestTarget)
 	{
-		LockOnTarget = BestTarget;
 		bIsLockedOn = true;
+		// SetLockedOnTarget(BestTarget);
+		LockOnTarget = BestTarget;
 		// GetCharacterMovement()->bOrientRotationToMovement = false;
 		UE_LOG(LogTemp, Log, TEXT("LockOn: %s"), *BestTarget->GetName());
 		AbilitySystemComponent->AddLooseGameplayTag(
@@ -481,12 +485,7 @@ FName ABasePlayableCharacter::GetNextSpawnSocketName() const
 	return NextSpawnSocketName;
 }
 
-void ABasePlayableCharacter::SetNextProjectileTarget(AActor* TargetActor)
+AActor* ABasePlayableCharacter::GetLockedOnTarget() const
 {
-	NextProjectileTarget = TargetActor;
-}
-
-AActor* ABasePlayableCharacter::GetNextProjectileTarget() const
-{
-	return NextProjectileTarget;
+	return LockOnTarget;
 }

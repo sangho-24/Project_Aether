@@ -120,9 +120,6 @@ protected:
 	
 	UPROPERTY()
 	FName NextSpawnSocketName;
-
-	UPROPERTY()
-	TObjectPtr<AActor> NextProjectileTarget = nullptr;
 	
 	float NextDamageMultiplier = 1.0f;
 	
@@ -170,6 +167,5 @@ public:
 	virtual float GetNextDamageMultiplier() const override;
 	virtual void SetNextSpawnSocketName(FName SocketName) override;
 	virtual FName GetNextSpawnSocketName() const override;
-	virtual void SetNextProjectileTarget(AActor* TargetActor) override;
-	virtual AActor* GetNextProjectileTarget() const override;
+	virtual AActor* GetLockedOnTarget() const override;
 };

@@ -177,12 +177,12 @@ void UGA_BasicSkill::OnSpawnProjectile(FGameplayEventData Payload)
 	TSubclassOf<AActor> ProjectileClass = AnimChar->GetNextProjectileClass();
 	const float DamageMult = AnimChar->GetNextDamageMultiplier();
 	const FName SocketName = AnimChar->GetNextSpawnSocketName();
+	AActor* Target = AnimChar->GetLockedOnTarget();
 	if (!ProjectileClass)
 		return;
 	
 	FVector  SpawnLocation = AvatarActor->GetActorLocation();
 	FRotator SpawnRotation = AvatarActor->GetActorRotation();
-
 	if (!SocketName.IsNone())
 	{
 		if (USkeletalMeshComponent* Mesh =
@@ -198,6 +198,12 @@ void UGA_BasicSkill::OnSpawnProjectile(FGameplayEventData Payload)
 					TEXT("[GA_BasicSkill] 소켓 '%s' 없음 → 캐릭터 위치 사용"), *SocketName.ToString());
 			}
 		}
+	}
+	// 타겟이 있으면 타겟을 향하도록
+	if (Target)
+	{
+		FVector ToTarget = (Target->GetActorLocation() - SpawnLocation).GetSafeNormal();
+		SpawnRotation = ToTarget.Rotation();
 	}
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Instigator = Cast<APawn>(AvatarActor);

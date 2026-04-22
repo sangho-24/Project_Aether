@@ -22,6 +22,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile|Setup")
 	float DamageMultiplier = 1.0f;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	TObjectPtr<AActor> TargetActor = nullptr;
+	
 	virtual void Notify(USkeletalMeshComponent* MeshComp,
 		UAnimSequenceBase* Animation,
 		const FAnimNotifyEventReference& EventReference) override;
