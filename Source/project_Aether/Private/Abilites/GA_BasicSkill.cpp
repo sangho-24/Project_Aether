@@ -7,6 +7,7 @@
 #include "Actor/BaseProjectile.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 
 UGA_BasicSkill::UGA_BasicSkill()
@@ -205,21 +206,24 @@ void UGA_BasicSkill::OnSpawnProjectile(FGameplayEventData Payload)
 		FVector ToTarget = (Target->GetActorLocation() - SpawnLocation).GetSafeNormal();
 		SpawnRotation = ToTarget.Rotation();
 	}
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Instigator = Cast<APawn>(AvatarActor);
-	SpawnParams.Owner      = AvatarActor;
+	
+	ABaseProjectile* Proj = AvatarActor->GetWorld()->SpawnActorDeferred<ABaseProjectile>(
+		ProjectileClass, 
+		FTransform(SpawnRotation, SpawnLocation),
+		AvatarActor,
+		Cast<APawn>(AvatarActor),
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
-	AActor* SpawnedActor = AvatarActor->GetWorld()->SpawnActor<AActor>(
-		ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
-
-
-	// ── 투사체 초기화 (ABaseProjectile 파생 클래스인 경우) ──
-	if (ABaseProjectile* Proj = Cast<ABaseProjectile>(SpawnedActor))
+	if (Proj)
 	{
 		UAbilitySystemComponent* SourceASC =
 			CurrentActorInfo->AbilitySystemComponent.Get();
-		
+
+		// 콜리전 활성화 이전에 초기화
 		Proj->InitProjectile(SourceASC, DamageMult);
+
+		// 이제 BeginPlay 호출 + 콜리전 활성화
+		UGameplayStatics::FinishSpawningActor(Proj, FTransform(SpawnRotation, SpawnLocation));
 	}
 }
 
