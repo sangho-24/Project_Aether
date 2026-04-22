@@ -1,7 +1,12 @@
+// 기타 Include
 #include "Character/BasePlayableCharacter.h"
+#include "Character/BaseEnemyCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Actor/FloatingDamageActor.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/OverlapResult.h"
 // 입력 Include
 #include "InputActionValue.h"
 #include "EnhancedInputComponent.h"
@@ -13,7 +18,7 @@
 #include "AbilitySystemComponent.h"
 #include "GAS/PlayerAttributeSet.h"
 // UI Include
-#include "Actor/FloatingDamageActor.h"
+
 
 
 namespace BaseConstants
@@ -113,6 +118,36 @@ void ABasePlayableCharacter::Tick(float DeltaTime)
 			bIsZoomInterpolating = false;
 		}
 	}
+	// 락온 카메라 추적
+	if (bIsLockedOn && LockOnTarget)
+	{
+		// 타겟이 죽었거나 유효하지 않으면 해제
+		if (!IsValid(LockOnTarget) || LockOnTarget->GetIsDead())
+		{
+			bIsLockedOn = false;
+			LockOnTarget = nullptr;
+			AbilitySystemComponent->RemoveLooseGameplayTag(
+				FGameplayTag::RequestGameplayTag("State.LockedOn"));
+			return;
+		}
+		// 거리가 멀어지면 해제
+		if (FVector::Dist(GetActorLocation(), LockOnTarget->GetActorLocation()) > LockOnRadius)
+		{
+			bIsLockedOn = false;
+			LockOnTarget = nullptr;
+			AbilitySystemComponent->RemoveLooseGameplayTag(
+				FGameplayTag::RequestGameplayTag("State.LockedOn"));
+			return;
+		}
+		
+		// 플레이어 → 타겟 방향으로 컨트롤러 회전 보간
+		FVector ToTarget = LockOnTarget->GetActorLocation() - GetActorLocation();
+		FRotator TargetRot = ToTarget.Rotation();
+		TargetRot.Pitch -= 30.f;
+		FRotator CurrentRot = Controller->GetControlRotation();
+		FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, LockOnInterpSpeed);
+		Controller->SetControlRotation(NewRot);
+	}
 }
 
 // Called to bind functionality to input
@@ -140,6 +175,12 @@ void ABasePlayableCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		{
 			EnhancedInputComponent->BindAction(ZoomInput, ETriggerEvent::Triggered, this,
 			                                   &ABasePlayableCharacter::ZoomAction);
+		}
+		// 락온
+		if (LockOnInput)
+		{
+			EnhancedInputComponent->BindAction(LockOnInput, ETriggerEvent::Triggered, this,
+											   &ABasePlayableCharacter::LockOnAction);
 		}
 		// 점프 (GAS)
 		if (JumpInput)
@@ -179,6 +220,9 @@ void ABasePlayableCharacter::MoveAction(const FInputActionValue& Value)
 
 void ABasePlayableCharacter::LookAction(const FInputActionValue& Value)
 {
+	if (bIsLockedOn)
+		return;
+
 	if (Controller != nullptr)
 	{
 		const FVector2D LookAxisVector = Value.Get<FVector2D>();
@@ -267,6 +311,81 @@ void ABasePlayableCharacter::BasicSkillAction()
 		AbilitySystemComponent->TryActivateAbilitiesByTag(
 			FGameplayTagContainer(FGameplayTag::RequestGameplayTag("Ability.BasicSkill")));
 	}
+}
+
+void ABasePlayableCharacter::LockOnAction()
+{
+	if (bIsLockedOn)
+	{
+		// 락온 해제
+		bIsLockedOn = false;
+		LockOnTarget = nullptr;
+		// GetCharacterMovement()->bOrientRotationToMovement = true;
+		UE_LOG(LogTemp, Log, TEXT("LockOn: 해제"));
+		AbilitySystemComponent->RemoveLooseGameplayTag(
+			FGameplayTag::RequestGameplayTag("State.LockedOn"));
+		return;
+	}
+
+	ABaseEnemyCharacter* BestTarget = FindLockOnTarget();
+	if (BestTarget)
+	{
+		LockOnTarget = BestTarget;
+		bIsLockedOn = true;
+		// GetCharacterMovement()->bOrientRotationToMovement = false;
+		UE_LOG(LogTemp, Log, TEXT("LockOn: %s"), *BestTarget->GetName());
+		AbilitySystemComponent->AddLooseGameplayTag(
+			FGameplayTag::RequestGameplayTag("State.LockedOn"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("LockOn: 주변에 타겟 없음"));
+	}
+}
+
+ABaseEnemyCharacter* ABasePlayableCharacter::FindLockOnTarget()
+{
+	if (!GetWorld()) return nullptr;
+
+	// 반경 내 모든 캐릭터 탐색
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	GetWorld()->OverlapMultiByObjectType(
+		OverlapResults,
+		GetActorLocation(),
+		FQuat::Identity,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_Pawn),
+		FCollisionShape::MakeSphere(LockOnRadius),
+		Params);
+
+	// 화면 중앙에 가장 가까운(카메라 정면) 적 선택
+	APlayerController* PC = Cast<APlayerController>(Controller);
+	if (!PC) 
+		return nullptr;
+
+	ABaseEnemyCharacter* BestActor = nullptr;
+	float BestScore = -1.f; // dot product 기준 (1에 가까울수록 정면)
+
+	for (const FOverlapResult& Result : OverlapResults)
+	{
+		ABaseEnemyCharacter* Enemy = Cast<ABaseEnemyCharacter>(Result.GetActor());
+		if (!Enemy) 
+			continue;
+
+		// 카메라 정면 방향과의 각도 계산 (dot product)
+		FVector CamForward = FollowCamera->GetForwardVector();
+		FVector ToActor = (Enemy->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		float Dot = FVector::DotProduct(CamForward, ToActor);
+
+		if (Dot > BestScore)
+		{
+			BestScore = Dot;
+			BestActor = Enemy;
+		}
+	}
+	return BestActor;
 }
 
 UAbilitySystemComponent* ABasePlayableCharacter::GetAbilitySystemComponent() const
@@ -360,4 +479,14 @@ void ABasePlayableCharacter::SetNextSpawnSocketName(FName SocketName)
 FName ABasePlayableCharacter::GetNextSpawnSocketName() const
 {
 	return NextSpawnSocketName;
+}
+
+void ABasePlayableCharacter::SetNextProjectileTarget(AActor* TargetActor)
+{
+	NextProjectileTarget = TargetActor;
+}
+
+AActor* ABasePlayableCharacter::GetNextProjectileTarget() const
+{
+	return NextProjectileTarget;
 }

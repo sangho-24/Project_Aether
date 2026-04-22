@@ -23,10 +23,18 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FloatingHPBar")
 	float FadeDistance = 2000.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FloatingHPBar")
+	float ScaleDistance = 500.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FloatingHPBar")
+	float MinScale = 0.3f;
 
 public:
 	void UpdateHP(const float CurrentHP, const float MaxHP) const;
 	void UpdateName(const FString& InName) const;
 	void UpdateScale(const float Distance);
 	float GetFadeDistance() const;
+	float GetScaleDistance() const;
+	float GetMinScale() const;
 };

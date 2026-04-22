@@ -49,3 +49,13 @@ float UNameplateWidget::GetFadeDistance() const
 {
 	return FadeDistance;
 }
+
+float UNameplateWidget::GetScaleDistance() const
+{
+	return ScaleDistance;
+}
+
+float UNameplateWidget::GetMinScale() const
+{
+	return MinScale;
+}

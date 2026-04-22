@@ -1,7 +1,6 @@
-
 #include "Character/BaseEnemyCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Components/CapsuleComponent.h" 
+#include "Components/CapsuleComponent.h"
 // GAS Include
 #include "AbilitySystemComponent.h"
 #include "GAS/EnemyAttributeSet.h"
@@ -33,7 +32,7 @@ ABaseEnemyCharacter::ABaseEnemyCharacter()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	AttributeSet = CreateDefaultSubobject<UEnemyAttributeSet>(TEXT("AttributeSet"));
-	
+
 	// ===== Nameplate WidgetComponent 생성 =====
 	NameplateWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NameplateWidgetComponent"));
 	NameplateWidgetComponent->SetupAttachment(GetMesh());
@@ -45,10 +44,10 @@ ABaseEnemyCharacter::ABaseEnemyCharacter()
 void ABaseEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	const float CapsuleHalf = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	NameplateWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, CapsuleHalf * 2.4f));
-	
+
 	// GAS ActorInfo 초기화
 	if (AbilitySystemComponent)
 	{
@@ -63,14 +62,13 @@ void ABaseEnemyCharacter::BeginPlay()
 		}
 		// ===== HP 델리게이트 등록 =====
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			UBaseAttributeSet::GetCurrentHPAttribute())
-			.AddUObject(this, &ABaseEnemyCharacter::OnHPChanged);
+			                      UBaseAttributeSet::GetCurrentHPAttribute())
+		                      .AddUObject(this, &ABaseEnemyCharacter::OnHPChanged);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			UBaseAttributeSet::GetMaxHPAttribute())
-			.AddUObject(this, &ABaseEnemyCharacter::OnHPChanged);
-		
+			                      UBaseAttributeSet::GetMaxHPAttribute())
+		                      .AddUObject(this, &ABaseEnemyCharacter::OnHPChanged);
 	}
-	
+
 	// ===== Nameplate 위젯 초기화 =====
 	if (NameplateWidgetClass)
 	{
@@ -80,12 +78,13 @@ void ABaseEnemyCharacter::BeginPlay()
 	{
 		Nameplate->UpdateName(EnemyName);
 		CachedFadeDist = Nameplate->GetFadeDistance();
+		CachedSacleDist = Nameplate->GetScaleDistance();
+		CachedMinScale = Nameplate->GetMinScale();
 		if (AttributeSet)
 		{
 			Nameplate->UpdateHP(AttributeSet->GetCurrentHP(), AttributeSet->GetMaxHP());
 		}
 	}
-	
 }
 
 void ABaseEnemyCharacter::OnHPChanged(const FOnAttributeChangeData& Data)
@@ -102,22 +101,28 @@ void ABaseEnemyCharacter::OnHPChanged(const FOnAttributeChangeData& Data)
 void ABaseEnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (NameplateWidgetComponent)
+	{
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		if (!PC || !PC->GetPawn())
+			return;
 	
-	if (!NameplateWidgetComponent) 
-		return;
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (!PC || !PC->GetPawn()) 
-		return;
-	
-	const float Dist = FVector::Dist(GetActorLocation(), PC->GetPawn()->GetActorLocation());
-	// 일정 거리 이상이면 숨김
-	NameplateWidgetComponent->SetVisibility(!bIsDead && Dist <= CachedFadeDist);
-	// 카메라를 바라보도록 빌보드 처리
-	FVector CameraLoc;
-	FRotator CameraRot;
-	PC->GetPlayerViewPoint(CameraLoc, CameraRot);
-	const FRotator LookAt = (CameraLoc - NameplateWidgetComponent->GetComponentLocation()).Rotation();
-	NameplateWidgetComponent->SetWorldRotation(LookAt);
+		// 일정 거리 이상이면 숨김
+		const float Dist = FVector::Dist(GetActorLocation(), PC->GetPawn()->GetActorLocation());
+		const bool bShouldShow = Dist <= CachedFadeDist;
+		NameplateWidgetComponent->SetVisibility(bShouldShow);
+		if (bShouldShow)
+		{
+			// 카메라를 바라보도록 빌보드 처리
+			FRotator CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
+			FRotator WidgetRotation = FRotator(CameraRotation.Pitch * -1.0f, CameraRotation.Yaw + 180.0f, 0.0f);
+			NameplateWidgetComponent->SetWorldRotation(WidgetRotation);
+			// 거리 기반 스케일 조절
+			const float DistScale = FMath::Clamp(Dist / CachedSacleDist, CachedMinScale, 1.0f);
+			NameplateWidgetComponent->SetWorldScale3D(FVector(DistScale));
+		}
+	}
 }
 
 UAbilitySystemComponent* ABaseEnemyCharacter::GetAbilitySystemComponent() const
@@ -130,25 +135,31 @@ UEnemyAttributeSet* ABaseEnemyCharacter::GetEnemyAttributeSet() const
 	return AttributeSet;
 }
 
+bool ABaseEnemyCharacter::GetIsDead() const
+{
+	return bIsDead;
+}
+
 void ABaseEnemyCharacter::SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical)
 {
-	UE_LOG(LogTemp, Log, TEXT("SpawnFloatingDamage: Amount=%.0f, IsHeal=%s"), Amount, bIsHeal ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogTemp, Log, TEXT("SpawnFloatingDamage: Amount=%.0f, IsHeal=%s"), Amount,
+	       bIsHeal ? TEXT("true") : TEXT("false"));
 	if (!FloatingDamageActorClass)
 		return;
-	
+
 	UWorld* World = GetWorld();
-	if (!World) 
+	if (!World)
 		return;
-	
+
 	const float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, CapsuleHalfHeight);
 	SpawnLocation += FVector(
 		FMath::RandRange(-30.f, 30.f),
 		FMath::RandRange(-30.f, 30.f),
 		0.f);
-	
+
 	AFloatingDamageActor* DamageActor = World->SpawnActor<AFloatingDamageActor>(
-	FloatingDamageActorClass, SpawnLocation,FRotator::ZeroRotator);
+		FloatingDamageActorClass, SpawnLocation, FRotator::ZeroRotator);
 	if (DamageActor)
 	{
 		DamageActor->Initialize(Amount, bIsHeal, bIsCritical);
@@ -161,8 +172,8 @@ void ABaseEnemyCharacter::Death(AActor* Killer)
 	bIsDead = true;
 
 	UE_LOG(LogTemp, Log, TEXT("[Enemy] %s died. Killer: %s"),
-		*GetName(),
-		Killer ? *Killer->GetName() : TEXT("None"));
+	       *GetName(),
+	       Killer ? *Killer->GetName() : TEXT("None"));
 
 	// AI 컨트롤러 정지
 	if (AAIController* AIC = Cast<AAIController>(GetController()))
@@ -174,8 +185,48 @@ void ABaseEnemyCharacter::Death(AActor* Killer)
 	// 콜리전 비활성화 & 물리 활성화 (래그돌 or 단순 비활성화)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	// TODO: 사망 몽타주 재생 또는 일정 시간 뒤 Destroy() 호출
-	// SetLifeSpan(3.0f);
+	
+	// 죽는 몽타주 재생
+	if (DeathMontage)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			float MontageDuration = AnimInstance->Montage_Play(DeathMontage);
+			if (MontageDuration > 0.f)
+			{
+				// 델리게이트 대신 타이머로 몽타주 길이만큼 대기
+				GetWorldTimerManager().SetTimer(
+					DeathTimerHandle,
+					this,
+					&ABaseEnemyCharacter::OnDeathMontageEnded,
+					MontageDuration,
+					false);
+				return;
+			}
+		}
+	}
+	OnDeathMontageEnded();
 }
 
+void ABaseEnemyCharacter::OnDeathMontageEnded()
+{
+	// 네임플레이트 숨김
+	if (NameplateWidgetComponent)
+	{
+		NameplateWidgetComponent->SetVisibility(false);
+	}
+
+	// 2초 후 Destroy
+	GetWorldTimerManager().SetTimer(
+		DestroyTimerHandle, 
+		this, 
+		&ABaseEnemyCharacter::DestroyEnemy, 
+		2.0f, 
+		false);
+}
+
+void ABaseEnemyCharacter::DestroyEnemy()
+{
+	Destroy();
+}

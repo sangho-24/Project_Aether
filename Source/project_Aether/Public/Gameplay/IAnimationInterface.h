@@ -36,4 +36,7 @@ public:
 	// 투사체 스폰 소켓
 	virtual void SetNextSpawnSocketName(FName SocketName) = 0;
 	virtual FName GetNextSpawnSocketName() const = 0;
+	// 투사체 타겟 액터
+	virtual void SetNextProjectileTarget(AActor* TargetActor) = 0;
+	virtual AActor* GetNextProjectileTarget() const = 0;
 };

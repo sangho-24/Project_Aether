@@ -1,10 +1,13 @@
-
 #include "Abilites/GA_BasicSkill.h"
+#include "AbilitySystemComponent.h"
 #include "Gameplay/IAnimationInterface.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Actor/BaseProjectile.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 UGA_BasicSkill::UGA_BasicSkill()
 {
@@ -61,6 +64,17 @@ void UGA_BasicSkill::ActivateAbility(
 	bSaveCombo = false;
 	bIsComboWindowOpen = false;
 	bComboTransitioning = false;
+	
+	// 공격 중 캐릭터가 바라보는 방향으로 회전 고정 (락온시에만)
+	if (ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(
+		FGameplayTag::RequestGameplayTag("State.LockedOn")))
+	{
+		if (ACharacter* Character = Cast<ACharacter>(AvatarActor))
+		{
+			Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+			Character->bUseControllerRotationYaw = true;
+		}
+	}
 	
 	// 1타 몽타주 재생
 	PlayMontage(SkillData.Montage);
@@ -246,7 +260,14 @@ void UGA_BasicSkill::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_BasicSkill] EndAbility - 취소 여부: %s"),
-		bWasCancelled ? TEXT("YES") : TEXT("NO"));
+	// 공격 종료 시 무브먼트 회전 복원
+	if (ActorInfo)
+	{
+		if (ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
+		{
+			Character->GetCharacterMovement()->bOrientRotationToMovement = true;
+			Character->bUseControllerRotationYaw = false;
+		}
+	}
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

@@ -43,6 +43,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Abilities|Setup")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 	
+	// ===== 애니메이션 =====
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Setup")
+	UAnimMontage* DeathMontage;
+
+	FTimerHandle DeathTimerHandle;
+	FTimerHandle DestroyTimerHandle;
+	
 	// ===== UI =====
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Setup")
 	TSubclassOf<AFloatingDamageActor> FloatingDamageActorClass;
@@ -57,16 +64,22 @@ protected:
 	FString EnemyName = TEXT("Enemy"); 
 	
 	float CachedFadeDist = 2000.f;
+	float CachedSacleDist = 500.f;
+	float CachedMinScale = 0.3f;
 protected:
 	virtual void BeginPlay() override;
-
+	void DestroyEnemy();
+	
+	// ===== 콜백 =====
 	void OnHPChanged(const FOnAttributeChangeData& Data);
+	void OnDeathMontageEnded();
 
 public:	
 	virtual void Tick(float DeltaTime) override;
 	// ===== GAS =====
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UEnemyAttributeSet* GetEnemyAttributeSet() const;
+	bool GetIsDead() const;
 
 	// ===== ICombatInterface =====
 	virtual void SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical) override;

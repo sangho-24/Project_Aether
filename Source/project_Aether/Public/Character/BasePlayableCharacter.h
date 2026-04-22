@@ -19,6 +19,7 @@ class UAbilitySystemComponent;
 class UPlayerAttributeSet;
 class UGameplayAbility;
 class AFloatingDamageActor;
+class ABaseEnemyCharacter;
 
 UCLASS()
 class PROJECT_AETHER_API ABasePlayableCharacter 
@@ -44,6 +45,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Setup")
 	UInputAction* ZoomInput;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Setup")
+	UInputAction* LockOnInput;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Setup")
 	UInputAction* JumpInput;
@@ -76,6 +80,18 @@ protected:
 	
 	bool bIsZoomInterpolating = false;
 	
+	// ===== 락온 =====
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LockOn")
+	float LockOnRadius = 1500.0f;           // 락온 탐색 반경
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LockOn")
+	float LockOnInterpSpeed = 10.0f; 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LockOn")
+	TObjectPtr<ABaseEnemyCharacter> LockOnTarget = nullptr;  // 현재 락온 타겟
+
+	bool bIsLockedOn = false;
+	
 	// ===== GAS =====
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	UAbilitySystemComponent* AbilitySystemComponent;
@@ -105,6 +121,9 @@ protected:
 	UPROPERTY()
 	FName NextSpawnSocketName;
 
+	UPROPERTY()
+	TObjectPtr<AActor> NextProjectileTarget = nullptr;
+	
 	float NextDamageMultiplier = 1.0f;
 	
 	// ===== UI =====
@@ -122,15 +141,25 @@ protected:
 	void JumpAction();
 	void StopJumpingAction();
 	void BasicSkillAction();
+	void LockOnAction();
+	ABaseEnemyCharacter* FindLockOnTarget();
 
 public:	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UPlayerAttributeSet* GetPlayerAttributeSet() const;
+	
+	UFUNCTION(BlueprintPure, Category = "LockOn")
+	bool IsLockedOn() const { return bIsLockedOn; }
+
+	UFUNCTION(BlueprintPure, Category = "LockOn")
+	ABaseEnemyCharacter* GetLockOnTarget() const { return LockOnTarget; }
+	
 	// ===== 인터페이스 함수 =====
 	// ICombatInterface
 	virtual void SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical) override;
 	virtual void Death(AActor* Killer) override;
+	
 	// IAnimationInterface
 	virtual FAbilitySkillData GetSkillDataForAbility(FGameplayTag AbilityTag) override;
 	virtual void SetNextComboMontage(UAnimMontage* Montage) override;
@@ -141,4 +170,6 @@ public:
 	virtual float GetNextDamageMultiplier() const override;
 	virtual void SetNextSpawnSocketName(FName SocketName) override;
 	virtual FName GetNextSpawnSocketName() const override;
+	virtual void SetNextProjectileTarget(AActor* TargetActor) override;
+	virtual AActor* GetNextProjectileTarget() const override;
 };
