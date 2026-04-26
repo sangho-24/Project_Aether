@@ -29,13 +29,15 @@ public:
 	virtual void SetNextComboMontage(UAnimMontage* Montage) = 0;
 	virtual UAnimMontage* GetNextComboMontage() const = 0;
 	// 투사체 스폰 데이터 (GA_BasicSkill 뿐만 아니라 다른 스킬도 재사용 가능)
-	virtual void SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass) = 0;
-	virtual void SetNextDamageMultiplier(float DamageMultiplier) = 0;
-	virtual TSubclassOf<AActor> GetNextProjectileClass() const = 0;
-	virtual float GetNextDamageMultiplier() const = 0;
+	virtual void SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass) {}
+	virtual void SetNextDamageMultiplier(float DamageMultiplier) {}
+	virtual TSubclassOf<AActor> GetNextProjectileClass() const { return nullptr; }
+	virtual float GetNextDamageMultiplier() const { return 1.0f; }
 	// 투사체 스폰 소켓
-	virtual void SetNextSpawnSocketName(FName SocketName) = 0;
-	virtual FName GetNextSpawnSocketName() const = 0;
+	virtual void SetNextSpawnSocketName(FName SocketName) {}
+	virtual FName GetNextSpawnSocketName() const { return NAME_None; }
 	// 투사체 타겟 액터
-	virtual AActor* GetLockedOnTarget() const = 0;
+	virtual AActor* GetLockedOnTarget() const { return nullptr; }
+	virtual AActor* GetNearestTarget() const { return nullptr; }
+	virtual void SetNearestTarget() {}
 };

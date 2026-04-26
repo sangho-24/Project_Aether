@@ -150,6 +150,29 @@ void ABasePlayableCharacter::Tick(float DeltaTime)
 		FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, LockOnInterpSpeed);
 		Controller->SetControlRotation(NewRot);
 	}
+	
+	// 공격 중 타겟 방향 회전 유지
+	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(
+		FGameplayTag::RequestGameplayTag("State.FaceTarget")))
+	{
+		// 락온 우선, 없으면 소프트 타겟
+		AActor* RotTarget = LockOnTarget;
+		if (!RotTarget)
+			RotTarget = NearestTarget;
+
+		if (RotTarget)
+		{
+			FVector ToTarget = RotTarget->GetActorLocation() - GetActorLocation();
+			ToTarget.Z = 0.f;
+			if (!ToTarget.IsNearlyZero())
+			{
+				FRotator NewRot = GetActorRotation();
+				NewRot.Yaw = FMath::RInterpTo(
+					GetActorRotation(), ToTarget.Rotation(), DeltaTime, 15.f).Yaw;
+				SetActorRotation(NewRot);
+			}
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -392,6 +415,7 @@ ABaseEnemyCharacter* ABasePlayableCharacter::FindLockOnTarget()
 	return BestActor;
 }
 
+
 UAbilitySystemComponent* ABasePlayableCharacter::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
@@ -488,4 +512,50 @@ FName ABasePlayableCharacter::GetNextSpawnSocketName() const
 AActor* ABasePlayableCharacter::GetLockedOnTarget() const
 {
 	return LockOnTarget;
+}
+
+AActor* ABasePlayableCharacter::GetNearestTarget() const
+{
+	return NearestTarget;         // 범위 내 소프트 타겟
+}
+
+void ABasePlayableCharacter::SetNearestTarget()
+{
+		if (!GetWorld())
+		{
+			NearestTarget = nullptr;
+			return;
+		}
+
+		// 반경 내 모든 캐릭터 탐색
+		TArray<FOverlapResult> OverlapResults;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+
+		GetWorld()->OverlapMultiByObjectType(
+			OverlapResults,
+			GetActorLocation(),
+			FQuat::Identity,
+			FCollisionObjectQueryParams(ECollisionChannel::ECC_Pawn),
+			FCollisionShape::MakeSphere(LockOnRadius),
+			Params);
+
+		// 거리 기준 가장 가까운 적 선택
+		ABaseEnemyCharacter* NearestActor = nullptr;
+		float NearestDistSq = FLT_MAX;  // 제곱 거리 비교 (sqrt 불필요)
+
+		for (const FOverlapResult& Result : OverlapResults)
+		{
+			ABaseEnemyCharacter* Enemy = Cast<ABaseEnemyCharacter>(Result.GetActor());
+			if (!Enemy || Enemy->GetIsDead())
+				continue;
+
+			const float DistSq = FVector::DistSquared(GetActorLocation(), Enemy->GetActorLocation());
+			if (DistSq < NearestDistSq)
+			{
+				NearestDistSq = DistSq;
+				NearestActor = Enemy;
+			}
+		}
+		NearestTarget = NearestActor;
 }

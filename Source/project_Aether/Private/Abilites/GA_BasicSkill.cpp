@@ -20,6 +20,7 @@ UGA_BasicSkill::UGA_BasicSkill()
 	// 발동 중 상태 태그 부여
 	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Attacking")));
 	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
+	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.FaceTarget")));
 
 	// 인스턴스 정책: 콜백 바인딩을 위해 InstancedPerActor 필수
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
@@ -65,16 +66,31 @@ void UGA_BasicSkill::ActivateAbility(
 	bSaveCombo = false;
 	bIsComboWindowOpen = false;
 	bComboTransitioning = false;
-	
-	// 공격 중 캐릭터가 바라보는 방향으로 회전 고정 (락온시에만)
-	if (ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(
+	// 소프트 타겟 갱신 (락온 없을 때만)
+	if (!ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(
 		FGameplayTag::RequestGameplayTag("State.LockedOn")))
 	{
-		if (ACharacter* Character = Cast<ACharacter>(AvatarActor))
+		AnimChar->SetNearestTarget();
+	}
+
+	// 유효 타겟 방향으로 캐릭터 회전 (+고정)
+	AActor* EffectiveTarget = AnimChar->GetLockedOnTarget();
+	if (!EffectiveTarget)
+		EffectiveTarget = AnimChar->GetNearestTarget();
+
+	if (ACharacter* Character = Cast<ACharacter>(AvatarActor))
+	{
+		if (EffectiveTarget)
 		{
+			FVector ToTarget = EffectiveTarget->GetActorLocation() - AvatarActor->GetActorLocation();
+			ToTarget.Z = 0.f;
+			FRotator NewRot = Character->GetActorRotation();
+			NewRot.Yaw = ToTarget.Rotation().Yaw;
+			Character->SetActorRotation(NewRot);
 			Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-			Character->bUseControllerRotationYaw = true;
+			Character->bUseControllerRotationYaw = false;
 		}
+		// EffectiveTarget 없으면 회전 설정 건드리지 않음 → 정면 그대로 발사
 	}
 	
 	// 1타 몽타주 재생
@@ -128,6 +144,7 @@ void UGA_BasicSkill::TryNextCombo()
 	
 	if (!AnimChar) 
 		return;
+	
 	UAnimMontage* NextMontage = AnimChar->GetNextComboMontage();
 	if (!NextMontage)
 	{
@@ -140,24 +157,33 @@ void UGA_BasicSkill::TryNextCombo()
 	bSaveCombo = false;
 	// 이전 몽타주 중단 시 OnMontageCancelled가 오지만 EndAbility 방지
 	bComboTransitioning = true;
+	
+	// 유효 타겟 결정 (락온 우선, 없으면 소프트 타겟)
+	AActor* EffectiveTarget = AnimChar->GetLockedOnTarget();
+	if (!EffectiveTarget)
+		EffectiveTarget = AnimChar->GetNearestTarget();
+	
 	if (ACharacter* Character = Cast<ACharacter>(CurrentActorInfo->AvatarActor.Get()))
 	{
-		const bool bIsLockedOn = CurrentActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(
-			FGameplayTag::RequestGameplayTag("State.LockedOn"));
-
-		if (bIsLockedOn)
+		if (EffectiveTarget)
 		{
-			// 락온 활성화됨 → 캐릭터를 타겟 방향으로 고정
+			// 타겟 방향으로 회전 + 고정
+			FVector ToTarget = EffectiveTarget->GetActorLocation() - Character->GetActorLocation();
+			ToTarget.Z = 0.f;
+			FRotator NewRot = Character->GetActorRotation();
+			NewRot.Yaw = ToTarget.Rotation().Yaw;
+			Character->SetActorRotation(NewRot);
 			Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-			Character->bUseControllerRotationYaw = true;
+			Character->bUseControllerRotationYaw = false;
 		}
 		else
 		{
-			// 락온 해제됨 → 이동 방향으로 회전 복원
+			// 타겟 없음 → 이동 방향 회전 복원
 			Character->GetCharacterMovement()->bOrientRotationToMovement = true;
 			Character->bUseControllerRotationYaw = false;
 		}
 	}
+
 	PlayMontage(NextMontage);
 	// PlayMontage 내부에서 이전 몽타주 중단 → OnMontageCancelled 동기 호출됨
 	// OnMontageCancelled에서 bComboTransitioning 확인 후 플래그 해제
@@ -196,6 +222,8 @@ void UGA_BasicSkill::OnSpawnProjectile(FGameplayEventData Payload)
 	const float DamageMult = AnimChar->GetNextDamageMultiplier();
 	const FName SocketName = AnimChar->GetNextSpawnSocketName();
 	AActor* Target = AnimChar->GetLockedOnTarget();
+	if (!Target)
+		Target = AnimChar->GetNearestTarget();
 	if (!ProjectileClass)
 		return;
 	

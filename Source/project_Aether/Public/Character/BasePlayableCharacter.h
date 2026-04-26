@@ -91,6 +91,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LockOn")
 	TObjectPtr<ABaseEnemyCharacter> LockOnTarget = nullptr;  // 현재 락온 타겟
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LockOn")
+	TObjectPtr<ABaseEnemyCharacter> NearestTarget = nullptr;  // 가까운 타겟
 
 	bool bIsLockedOn = false;
 	
@@ -143,6 +146,7 @@ protected:
 	void LockOnAction();
 	ABaseEnemyCharacter* FindLockOnTarget();
 
+
 public:	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
@@ -170,6 +174,8 @@ public:
 	virtual void SetNextSpawnSocketName(FName SocketName) override;
 	virtual FName GetNextSpawnSocketName() const override;
 	virtual AActor* GetLockedOnTarget() const override;
+	virtual AActor* GetNearestTarget() const override;
+	virtual void SetNearestTarget() override;
 	
 	// IGenericTeamAgentInterface
 	virtual FGenericTeamId GetGenericTeamId() const override {return FGenericTeamId(0);}
