@@ -19,6 +19,9 @@ protected:
 	UProgressBar* HPProgressBar;
 	
 	UPROPERTY(meta = (BindWidget))
+	UTextBlock* HPText;
+	
+	UPROPERTY(meta = (BindWidget))
 	UTextBlock* NameText;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FloatingHPBar")
@@ -32,8 +35,8 @@ protected:
 
 public:
 	void UpdateHP(const float CurrentHP, const float MaxHP) const;
+	void UpdateHPText(const float CurrentHP, const float MaxHP) const;
 	void UpdateName(const FString& InName) const;
-	void UpdateScale(const float Distance);
 	float GetFadeDistance() const;
 	float GetScaleDistance() const;
 	float GetMinScale() const;

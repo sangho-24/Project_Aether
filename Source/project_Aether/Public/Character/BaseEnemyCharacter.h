@@ -80,7 +80,13 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UEnemyAttributeSet* GetEnemyAttributeSet() const;
 	bool GetIsDead() const;
+	
+	// ===== AI =====
+    UPROPERTY(EditDefaultsOnly, Category = "AI|Setup")
+    UBehaviorTree* BehaviorTree;
 
+    UBehaviorTree* GetBehaviorTree() const { return BehaviorTree; }
+    
 	// ===== ICombatInterface =====
 	virtual void SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical) override;
 	virtual void Death(AActor* Killer) override;

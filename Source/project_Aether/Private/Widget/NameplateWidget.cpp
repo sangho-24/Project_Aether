@@ -10,6 +10,24 @@ void UNameplateWidget::UpdateHP(const float CurrentHP, const float MaxHP) const
 	}
 }
 
+void UNameplateWidget::UpdateHPText(const float CurrentHP, const float MaxHP) const
+{
+	if (HPText)
+	{
+		FNumberFormattingOptions Opts;
+		Opts.UseGrouping = true;       // 천 단위 콤마
+		Opts.MaximumFractionalDigits = 0; // 소수점 제거
+
+		FText NewHPText = FText::Format(
+			FText::FromString(TEXT("{0} / {1}")),
+			FText::AsNumber(FMath::FloorToInt(CurrentHP), &Opts),
+			FText::AsNumber(FMath::FloorToInt(MaxHP), &Opts)
+		);
+
+		HPText->SetText(NewHPText);
+	}
+}
+
 void UNameplateWidget::UpdateName(const FString& InName) const
 {
 	if (NameText)
@@ -18,32 +36,7 @@ void UNameplateWidget::UpdateName(const FString& InName) const
 	}
 }
 
-void UNameplateWidget::UpdateScale(const float Distance)
-{
-	// if (Distance < NearDistance || Distance > FarDistance)
-	// {
-	// 	return;
-	// }
-	// if (HPProgressBar)
-	// {
-	// 	float Scale = 1.0f;
-	// 	if (Distance <= 1000.f)
-	// 	{
-	// 		Scale = FMath::GetMappedRangeValueClamped(
-	// 			FVector2D(NearDistance, 1000.f),
-	// 			FVector2D(MaxScale, 1.0f),
-	// 			Distance);
-	// 	}
-	// 	else
-	// 	{
-	// 		Scale = FMath::GetMappedRangeValueClamped(
-	// 			FVector2D(1000.f, FarDistance),
-	// 			FVector2D(1.0f, MinScale),
-	// 			Distance);
-	// 	}
-	// 	SetRenderScale(FVector2D(Scale, Scale));
-	// }
-}
+
 
 float UNameplateWidget::GetFadeDistance() const
 {

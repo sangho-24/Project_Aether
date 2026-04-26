@@ -36,9 +36,8 @@ ABaseEnemyCharacter::ABaseEnemyCharacter()
 	// ===== Nameplate WidgetComponent 생성 =====
 	NameplateWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NameplateWidgetComponent"));
 	NameplateWidgetComponent->SetupAttachment(GetMesh());
-	// Screen Space로 설정하면 항상 카메라를 바라봄 TODO 이거 월드로 하면 더 자연스럽지 않을까?
 	NameplateWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
-	NameplateWidgetComponent->SetDrawSize(FVector2D(200.f, 50.f));
+	NameplateWidgetComponent->SetDrawSize(FVector2D(300.f, 75.f));
 }
 
 void ABaseEnemyCharacter::BeginPlay()
@@ -83,6 +82,7 @@ void ABaseEnemyCharacter::BeginPlay()
 		if (AttributeSet)
 		{
 			Nameplate->UpdateHP(AttributeSet->GetCurrentHP(), AttributeSet->GetMaxHP());
+			Nameplate->UpdateHPText(AttributeSet->GetCurrentHP(), AttributeSet->GetMaxHP());
 		}
 	}
 }
@@ -94,6 +94,7 @@ void ABaseEnemyCharacter::OnHPChanged(const FOnAttributeChangeData& Data)
 		if (AttributeSet)
 		{
 			Nameplate->UpdateHP(AttributeSet->GetCurrentHP(), AttributeSet->GetMaxHP());
+			Nameplate->UpdateHPText(AttributeSet->GetCurrentHP(), AttributeSet->GetMaxHP());
 		}
 	}
 }

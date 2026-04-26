@@ -8,6 +8,7 @@
 #include "AbilitySystemInterface.h"
 #include "Gameplay/ICombatInterface.h"
 #include "Gameplay/IAnimationInterface.h"
+#include "GenericTeamAgentInterface.h"
 #include "BasePlayableCharacter.generated.h"
 
 class UInputComponent;
@@ -23,8 +24,9 @@ class ABaseEnemyCharacter;
 
 UCLASS()
 class PROJECT_AETHER_API ABasePlayableCharacter 
-	: public ACharacter, public IAbilitySystemInterface, 
-		public ICombatInterface, public IAnimationInterface 
+	: public ACharacter, public IAbilitySystemInterface
+	, public ICombatInterface, public IAnimationInterface 
+	, public IGenericTeamAgentInterface 
 {
 	GENERATED_BODY()
 
@@ -168,4 +170,7 @@ public:
 	virtual void SetNextSpawnSocketName(FName SocketName) override;
 	virtual FName GetNextSpawnSocketName() const override;
 	virtual AActor* GetLockedOnTarget() const override;
+	
+	// IGenericTeamAgentInterface
+	virtual FGenericTeamId GetGenericTeamId() const override {return FGenericTeamId(0);}
 };

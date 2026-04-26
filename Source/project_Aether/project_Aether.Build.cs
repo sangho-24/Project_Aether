@@ -18,7 +18,8 @@ public class project_Aether : ModuleRules
 			"GameplayAbilities", 
 			"GameplayTags", 
 			"GameplayTasks",
-			"AIModule", 
+			"AIModule",
+			"NavigationSystem",
 			"Niagara"
 		});
 
