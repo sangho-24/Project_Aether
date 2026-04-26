@@ -15,6 +15,7 @@ class UGameplayAbility;
 class AFloatingDamageActor;
 class UWidgetComponent;
 class UNameplateWidget;  
+class UBehaviorTree;
 
 UCLASS()
 class PROJECT_AETHER_API ABaseEnemyCharacter : public ACharacter, public IAbilitySystemInterface, public ICombatInterface

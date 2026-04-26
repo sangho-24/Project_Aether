@@ -149,7 +149,7 @@ public:
 	UPlayerAttributeSet* GetPlayerAttributeSet() const;
 	
 	UFUNCTION(BlueprintPure, Category = "LockOn")
-	bool IsLockedOn() const { return bIsLockedOn; }
+	bool GetIsLockedOn() const { return bIsLockedOn; }
 
 	UFUNCTION(BlueprintPure, Category = "LockOn")
 	ABaseEnemyCharacter* GetLockOnTarget() const { return LockOnTarget; }

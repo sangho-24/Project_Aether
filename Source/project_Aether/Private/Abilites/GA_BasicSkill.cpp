@@ -140,7 +140,24 @@ void UGA_BasicSkill::TryNextCombo()
 	bSaveCombo = false;
 	// 이전 몽타주 중단 시 OnMontageCancelled가 오지만 EndAbility 방지
 	bComboTransitioning = true;
+	if (ACharacter* Character = Cast<ACharacter>(CurrentActorInfo->AvatarActor.Get()))
+	{
+		const bool bIsLockedOn = CurrentActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(
+			FGameplayTag::RequestGameplayTag("State.LockedOn"));
 
+		if (bIsLockedOn)
+		{
+			// 락온 활성화됨 → 캐릭터를 타겟 방향으로 고정
+			Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+			Character->bUseControllerRotationYaw = true;
+		}
+		else
+		{
+			// 락온 해제됨 → 이동 방향으로 회전 복원
+			Character->GetCharacterMovement()->bOrientRotationToMovement = true;
+			Character->bUseControllerRotationYaw = false;
+		}
+	}
 	PlayMontage(NextMontage);
 	// PlayMontage 내부에서 이전 몽타주 중단 → OnMontageCancelled 동기 호출됨
 	// OnMontageCancelled에서 bComboTransitioning 확인 후 플래그 해제
