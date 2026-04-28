@@ -11,6 +11,7 @@
 #include "Components/WidgetComponent.h"
 // AI Include
 #include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 ABaseEnemyCharacter::ABaseEnemyCharacter()
 {
@@ -120,7 +121,9 @@ void ABaseEnemyCharacter::Tick(float DeltaTime)
 			FRotator WidgetRotation = FRotator(CameraRotation.Pitch * -1.0f, CameraRotation.Yaw + 180.0f, 0.0f);
 			NameplateWidgetComponent->SetWorldRotation(WidgetRotation);
 			// 거리 기반 스케일 조절
-			const float DistScale = FMath::Clamp(Dist / CachedSacleDist, CachedMinScale, 1.0f);
+			const FVector CameraLocation = PC->PlayerCameraManager->GetCameraLocation();
+			const float CamDist = FVector::Dist(GetActorLocation(), CameraLocation);
+			const float DistScale = FMath::Clamp(CamDist / CachedSacleDist, CachedMinScale, 1.0f);
 			NameplateWidgetComponent->SetWorldScale3D(FVector(DistScale));
 		}
 	}
@@ -230,4 +233,58 @@ void ABaseEnemyCharacter::OnDeathMontageEnded()
 void ABaseEnemyCharacter::DestroyEnemy()
 {
 	Destroy();
+}
+
+FAbilitySkillData ABaseEnemyCharacter::GetSkillDataForAbility(FGameplayTag AbilityTag)
+{
+	FAbilitySkillData* Found = AbilitySkillDataMap.Find(AbilityTag);
+	if (!Found)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[EnemyCharacter] '%s' 태그에 대한 스킬 데이터 없음"),
+			*AbilityTag.ToString());
+		return FAbilitySkillData{};
+	}
+	return *Found;
+}
+
+AActor* ABaseEnemyCharacter::GetLockedOnTarget() const
+{
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
+		{
+			return Cast<AActor>(BB->GetValueAsObject(TEXT("TargetActor")));
+		}
+	}
+	return nullptr;
+}
+
+void ABaseEnemyCharacter::SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass)
+{
+	NextProjectileClass = ProjectileClass;
+}
+
+TSubclassOf<AActor> ABaseEnemyCharacter::GetNextProjectileClass() const
+{
+	return NextProjectileClass;
+}
+
+void ABaseEnemyCharacter::SetNextDamageMultiplier(float DamageMultiplier)
+{
+	NextDamageMultiplier = DamageMultiplier;
+}
+
+float ABaseEnemyCharacter::GetNextDamageMultiplier() const
+{
+	return NextDamageMultiplier;
+}
+
+void ABaseEnemyCharacter::SetNextSpawnSocketName(FName SocketName)
+{
+	NextSpawnSocketName = SocketName;
+}
+
+FName ABaseEnemyCharacter::GetNextSpawnSocketName() const
+{
+	return NextSpawnSocketName;
 }

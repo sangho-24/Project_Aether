@@ -44,6 +44,7 @@ ABasePlayableCharacter::ABasePlayableCharacter()
 	// 스프링암
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 60.f));
 	CameraBoom->TargetArmLength = 400.0f; // 카메라 거리
 	CameraBoom->bUsePawnControlRotation = true; // 마우스 입력으로 붐 회전
 	// 카메라
@@ -483,17 +484,15 @@ void ABasePlayableCharacter::SetNextProjectileClass(TSubclassOf<AActor> Projecti
 {
 	NextProjectileClass = ProjectileClass;
 }
-
-void ABasePlayableCharacter::SetNextDamageMultiplier(float DamageMultiplier)
-{
-	NextDamageMultiplier = DamageMultiplier;
-}
-
 TSubclassOf<AActor> ABasePlayableCharacter::GetNextProjectileClass() const
 {
 	return NextProjectileClass;
 }
 
+void ABasePlayableCharacter::SetNextDamageMultiplier(float DamageMultiplier)
+{
+	NextDamageMultiplier = DamageMultiplier;
+}
 float ABasePlayableCharacter::GetNextDamageMultiplier() const
 {
 	return NextDamageMultiplier;
@@ -503,7 +502,6 @@ void ABasePlayableCharacter::SetNextSpawnSocketName(FName SocketName)
 {
 	NextSpawnSocketName = SocketName;
 }
-
 FName ABasePlayableCharacter::GetNextSpawnSocketName() const
 {
 	return NextSpawnSocketName;

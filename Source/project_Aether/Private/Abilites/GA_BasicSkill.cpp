@@ -100,7 +100,7 @@ void UGA_BasicSkill::ActivateAbility(
 	
 	// 투사체 스폰 타이밍 (AN_SpawnProjectile → 이벤트 수신)
 	auto* SpawnTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-		this, FGameplayTag::RequestGameplayTag("Event.BasicSkill.SpawnProjectile"));
+		this, FGameplayTag::RequestGameplayTag("Event.SpawnProjectile"));
 	SpawnTask->EventReceived.AddDynamic(this, &UGA_BasicSkill::OnSpawnProjectile);
 	SpawnTask->ReadyForActivation();
 

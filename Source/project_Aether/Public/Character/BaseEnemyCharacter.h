@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
 #include "Gameplay/ICombatInterface.h"
+#include "Gameplay/IAnimationInterface.h"
+#include "GenericTeamAgentInterface.h"
 #include "GameplayEffectTypes.h"
 #include "BaseEnemyCharacter.generated.h"
 
@@ -18,7 +20,10 @@ class UNameplateWidget;
 class UBehaviorTree;
 
 UCLASS()
-class PROJECT_AETHER_API ABaseEnemyCharacter : public ACharacter, public IAbilitySystemInterface, public ICombatInterface
+class PROJECT_AETHER_API ABaseEnemyCharacter 
+	: public ACharacter, public IAbilitySystemInterface
+	, public ICombatInterface, public IAnimationInterface
+	, public IGenericTeamAgentInterface 
 {
 	GENERATED_BODY()
 
@@ -50,6 +55,17 @@ protected:
 
 	FTimerHandle DeathTimerHandle;
 	FTimerHandle DestroyTimerHandle;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Abilities|Setup")
+	TMap<FGameplayTag, FAbilitySkillData> AbilitySkillDataMap;
+	
+	UPROPERTY()
+	TSubclassOf<AActor> NextProjectileClass;
+	
+	UPROPERTY()
+	FName NextSpawnSocketName;
+	
+	float NextDamageMultiplier = 1.0f;
 	
 	// ===== UI =====
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Setup")
@@ -91,4 +107,15 @@ public:
 	// ===== ICombatInterface =====
 	virtual void SpawnFloatingDamage(const float Amount, const bool bIsHeal, const bool bIsCritical) override;
 	virtual void Death(AActor* Killer) override;
+	// ===== IAnimationInterface =====
+	virtual FAbilitySkillData GetSkillDataForAbility(FGameplayTag AbilityTag) override;
+	virtual AActor* GetLockedOnTarget() const override;
+	virtual void SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass) override;
+	virtual TSubclassOf<AActor> GetNextProjectileClass() const override;
+	virtual void SetNextDamageMultiplier(float DamageMultiplier) override;
+	virtual float GetNextDamageMultiplier() const override;
+	virtual void SetNextSpawnSocketName(FName SocketName) override;
+	virtual FName GetNextSpawnSocketName() const override;
+	// IGenericTeamAgentInterface
+	virtual FGenericTeamId GetGenericTeamId() const override {return FGenericTeamId(1);}
 };

@@ -28,7 +28,7 @@ void UAN_SpawnProjectile::Notify(USkeletalMeshComponent* MeshComp,
 	FGameplayEventData EventData;
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
 		Owner,
-		FGameplayTag::RequestGameplayTag("Event.BasicSkill.SpawnProjectile"),
+		FGameplayTag::RequestGameplayTag("Event.SpawnProjectile"),
 		EventData);
 }
 

@@ -168,8 +168,8 @@ public:
 	virtual void SetNextComboMontage(UAnimMontage* Montage) override;
 	virtual UAnimMontage* GetNextComboMontage() const override;
 	virtual void SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass) override;
-	virtual void SetNextDamageMultiplier(float DamageMultiplier) override;
 	virtual TSubclassOf<AActor> GetNextProjectileClass() const override;
+	virtual void SetNextDamageMultiplier(float DamageMultiplier) override;
 	virtual float GetNextDamageMultiplier() const override;
 	virtual void SetNextSpawnSocketName(FName SocketName) override;
 	virtual FName GetNextSpawnSocketName() const override;

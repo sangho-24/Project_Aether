@@ -19,6 +19,7 @@ void UGA_Jump::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FG
 	if (Character && Character->GetCharacterMovement())
 	{
 		Character->ACharacter::Jump();
+		UE_LOG(LogTemp, Warning, TEXT("캐릭터 점프 실행."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 	}
 }
