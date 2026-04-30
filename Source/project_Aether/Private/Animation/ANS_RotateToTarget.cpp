@@ -50,6 +50,5 @@ void UANS_RotateToTarget::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequ
 		RotationSpeed);
 
 	CachedOwner->SetActorRotation(NewRot);
-	UE_LOG(LogTemp, Log, TEXT("회전중"));
 }
 

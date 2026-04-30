@@ -13,6 +13,30 @@ struct FAbilitySkillData
 	TObjectPtr<UAnimMontage> Montage = nullptr;
 };
 
+USTRUCT(BlueprintType)
+struct FMeleeTraceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName StartSocketName = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName EndSocketName = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float TraceRadius = 20.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float ExtraLength = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DamageMultiplier = 1.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag HitCueTag;
+};
+	
 UINTERFACE(MinimalAPI, BlueprintType)
 class UAnimationInterface : public UInterface
 {
@@ -40,4 +64,7 @@ public:
 	virtual AActor* GetLockedOnTarget() const { return nullptr; }
 	virtual AActor* GetNearestTarget() const { return nullptr; }
 	virtual void SetNearestTarget() {}
+	// 근접 트레이스
+	virtual void SetMeleeTraceData(const FMeleeTraceData& Data) {}
+	virtual FMeleeTraceData GetMeleeTraceData() const { return FMeleeTraceData(); }
 };

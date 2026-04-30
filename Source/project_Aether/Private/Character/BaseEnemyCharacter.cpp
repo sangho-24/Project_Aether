@@ -288,3 +288,13 @@ FName ABaseEnemyCharacter::GetNextSpawnSocketName() const
 {
 	return NextSpawnSocketName;
 }
+
+void ABaseEnemyCharacter::SetMeleeTraceData(const FMeleeTraceData& Data)
+{
+	CachedMeleeTraceData = Data;
+}
+
+FMeleeTraceData ABaseEnemyCharacter::GetMeleeTraceData() const
+{
+	return CachedMeleeTraceData;
+}

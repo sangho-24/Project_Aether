@@ -6,6 +6,7 @@
 #include "AbilitySystemGlobals.h"
 #include "GameplayCueManager.h"
 #include "GAS/BaseAttributeSet.h"
+#include "Utility/AetherGASLibrary.h"
 
 ABaseProjectile::ABaseProjectile()
 {
@@ -79,7 +80,8 @@ void ABaseProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActo
 	{
 		return;
 	}
-	ExecuteHitGameplayCue(OtherActor, Hit, true);
+	UAetherGASLibrary::ExecuteGameplayCueWithHitResult(
+		GetOwner(), OtherActor, HitCueTag, Hit);
 	Destroy();
 }
 
@@ -128,46 +130,7 @@ void ABaseProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, A
 		}
 	}
 	// Gameplay Cue 실행
-	ExecuteHitGameplayCue(OtherActor, SweepResult, false);
+	UAetherGASLibrary::ExecuteGameplayCueWithHitResult(
+		GetOwner(), OtherActor, OverlapCueTag, SweepResult);
 	Destroy();
-}
-
-void ABaseProjectile::ExecuteHitGameplayCue(AActor* TargetActor, const FHitResult& HitResult, bool bIsHit)
-{
-	if (!TargetActor)
-	{
-		return;
-	}
-
-	// Gameplay Cue Parameters 설정
-	FGameplayCueParameters CueParams;
-	// HitResult가 없으면 실행시킨 투사체의 위치와 방향을 넣음
-	CueParams.Location = HitResult.ImpactPoint.IsZero() ? FVector(GetActorLocation()) : FVector(HitResult.ImpactPoint);
-	CueParams.Normal = HitResult.ImpactNormal.IsZero()
-		                   ? FVector(GetActorForwardVector())
-		                   : FVector(HitResult.ImpactNormal);
-	CueParams.PhysicalMaterial = HitResult.PhysMaterial;
-	CueParams.Instigator = GetInstigator();
-	CueParams.EffectCauser = this;
-	// HitResult 설정 (EffectContext)
-	FGameplayEffectContextHandle ContextHandle = FGameplayEffectContextHandle(
-		UAbilitySystemGlobals::Get().AllocGameplayEffectContext());
-	ContextHandle.AddHitResult(HitResult);
-	CueParams.EffectContext = ContextHandle;
-
-	// 대상이 ASC를 가지고 있으면 ASC를 통해 실행 (자동 복제)
-	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
-	if (TargetASC)
-	{
-		TargetASC->ExecuteGameplayCue(bIsHit ? HitCueTag : OverlapCueTag, CueParams);
-	}
-	else
-	{
-		// ASC가 없으면 GameplayCue Manager를 통해 실행
-		if (UGameplayCueManager* CueManager = UAbilitySystemGlobals::Get().GetGameplayCueManager())
-		{
-			CueManager->HandleGameplayCue(TargetActor, bIsHit ? HitCueTag : OverlapCueTag,
-			                              EGameplayCueEvent::Executed, CueParams);
-		}
-	}
 }

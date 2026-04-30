@@ -67,6 +67,8 @@ protected:
 	
 	float NextDamageMultiplier = 1.0f;
 	
+	FMeleeTraceData CachedMeleeTraceData;
+	
 	// ===== UI =====
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Setup")
 	TSubclassOf<AFloatingDamageActor> FloatingDamageActorClass;
@@ -116,6 +118,8 @@ public:
 	virtual float GetNextDamageMultiplier() const override;
 	virtual void SetNextSpawnSocketName(FName SocketName) override;
 	virtual FName GetNextSpawnSocketName() const override;
+	virtual void SetMeleeTraceData(const FMeleeTraceData& Data) override;
+	virtual FMeleeTraceData GetMeleeTraceData() const override;
 	// IGenericTeamAgentInterface
 	virtual FGenericTeamId GetGenericTeamId() const override {return FGenericTeamId(1);}
 };
