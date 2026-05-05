@@ -36,6 +36,22 @@ struct FMeleeTraceData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTag HitCueTag;
 };
+
+USTRUCT(BlueprintType)
+struct FProjectileData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName SpawnSocketName = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<AActor> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DamageMultiplier = 1.0f;
+	
+};
 	
 UINTERFACE(MinimalAPI, BlueprintType)
 class UAnimationInterface : public UInterface
@@ -52,18 +68,14 @@ public:
 	// 콤보 체인: ANS_ComboWindow가 다음 몽타주를 캐릭터에 저장/해제
 	virtual void SetNextComboMontage(UAnimMontage* Montage) {}
 	virtual UAnimMontage* GetNextComboMontage() const { return nullptr; }
-	// 투사체 스폰 데이터 (GA_BasicSkill 뿐만 아니라 다른 스킬도 재사용 가능)
-	virtual void SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass) {}
-	virtual void SetNextDamageMultiplier(float DamageMultiplier) {}
-	virtual TSubclassOf<AActor> GetNextProjectileClass() const { return nullptr; }
-	virtual float GetNextDamageMultiplier() const { return 1.0f; }
-	// 투사체 스폰 소켓
-	virtual void SetNextSpawnSocketName(FName SocketName) {}
-	virtual FName GetNextSpawnSocketName() const { return NAME_None; }
-	// 투사체 타겟 액터
+
+	// 타겟 액터
 	virtual AActor* GetLockedOnTarget() const { return nullptr; }
 	virtual AActor* GetNearestTarget() const { return nullptr; }
 	virtual void SetNearestTarget() {}
+	// 투사체
+	virtual void SetProjectileData(const FProjectileData& Data) {}
+	virtual FProjectileData GetProjectileData() const { return FProjectileData(); }
 	// 근접 트레이스
 	virtual void SetMeleeTraceData(const FMeleeTraceData& Data) {}
 	virtual FMeleeTraceData GetMeleeTraceData() const { return FMeleeTraceData(); }

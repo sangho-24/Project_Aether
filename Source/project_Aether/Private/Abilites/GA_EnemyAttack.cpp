@@ -13,9 +13,9 @@
 
 UGA_EnemyAttack::UGA_EnemyAttack()
 {
-    InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
     ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag("State.Attacking"));
     AbilityTag = FGameplayTag::RequestGameplayTag("Ability.EnemyAttack");
+    InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 
 void UGA_EnemyAttack::PostInitProperties()
@@ -103,7 +103,6 @@ void UGA_EnemyAttack::PlayMontage(UAnimMontage* Montage)
 
 void UGA_EnemyAttack::StartMeleeTrace()
 {
-    UE_LOG(LogTemp, Log, TEXT("[GA_EnemyAttack] 근접 공격 트레이스 시작"));
     if (!CurrentActorInfo) 
         return;
     UWorld* World = CurrentActorInfo->AvatarActor.Get()
@@ -202,19 +201,12 @@ void UGA_EnemyAttack::DoMeleeTrace()
 
 void UGA_EnemyAttack::ApplyMeleeDamage(AActor* TargetActor, const FHitResult& HitResult)
 {
-    UE_LOG(LogTemp, Log, TEXT("[애너미 어택] 0. 시작"));
-    UE_LOG(LogTemp, Warning, TEXT("[ApplyMeleeDamage] TargetActor=%s / MeleeDamageEffect=%s / CurrentActorInfo=%s"),
-       TargetActor ? *TargetActor->GetName() : TEXT("NULL"),
-       MeleeDamageEffect ? TEXT("OK") : TEXT("NULL"),
-       CurrentActorInfo ? TEXT("OK") : TEXT("NULL"));
     if (!TargetActor || !MeleeDamageEffect || !CurrentActorInfo) 
         return;
-    UE_LOG(LogTemp, Log, TEXT("[애너미 어택] 1. GE랑 액터인포는 있음"));
     UAbilitySystemComponent* SourceASC = CurrentActorInfo->AbilitySystemComponent.Get();
     UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
     if (!TargetASC) 
         return;
-    UE_LOG(LogTemp, Log, TEXT("[애너미 어택] 2. 타겟 ASC도 있음"));
     FGameplayEffectContextHandle ContextHandle = SourceASC
         ? SourceASC->MakeEffectContext()
         : TargetASC->MakeEffectContext();
@@ -224,7 +216,6 @@ void UGA_EnemyAttack::ApplyMeleeDamage(AActor* TargetActor, const FHitResult& Hi
     FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(MeleeDamageEffect, 1.0f, ContextHandle);
     if (!SpecHandle.IsValid()) 
         return;
-    UE_LOG(LogTemp, Log, TEXT("[애너미 어택] 3. GE 스펙 유효"));
     // 최종 데미지 = Base × (1 + AttackPower/100) × ANS의 DamageMultiplier
     float FinalDamage = MeleeBaseDamage;
     if (SourceASC)
@@ -289,30 +280,28 @@ void UGA_EnemyAttack::OnSpawnProjectile(FGameplayEventData Payload)
     if (!AnimChar)
         return;
 
-    TSubclassOf<AActor> ProjectileClass = AnimChar->GetNextProjectileClass();
+    ActiveProjectileData = AnimChar->GetProjectileData();
+    
+    TSubclassOf<AActor> ProjectileClass = ActiveProjectileData.ProjectileClass;
     if (!ProjectileClass)
         return;
 
-    const float DamageMult = AnimChar->GetNextDamageMultiplier();
-    const FName SocketName = AnimChar->GetNextSpawnSocketName();
+
 
     FVector SpawnLocation = AvatarActor->GetActorLocation();
     FRotator SpawnRotation = AvatarActor->GetActorRotation();
-
+    
     // 소켓 위치
-    if (!SocketName.IsNone())
+    if (USkeletalMeshComponent* Mesh =
+    AvatarActor->FindComponentByClass<USkeletalMeshComponent>())
     {
-        if (USkeletalMeshComponent* Mesh =
-            AvatarActor->FindComponentByClass<USkeletalMeshComponent>())
+        if (!ActiveProjectileData.SpawnSocketName.IsNone()
+            && Mesh->DoesSocketExist(ActiveProjectileData.SpawnSocketName))
         {
-            if (Mesh->DoesSocketExist(SocketName))
-                SpawnLocation = Mesh->GetSocketLocation(SocketName);
-            else
-                UE_LOG(LogTemp, Warning,
-                    TEXT("[GA_EnemyAttack] 소켓 '%s' 없음 → 캐릭터 위치 사용"),
-                    *SocketName.ToString());
+            SpawnLocation = Mesh->GetSocketLocation(ActiveProjectileData.SpawnSocketName);
         }
     }
+    
     // 타겟 설정
     AActor* Target = const_cast<AActor*>(Payload.Target.Get());
     if (!Target)
@@ -332,7 +321,7 @@ void UGA_EnemyAttack::OnSpawnProjectile(FGameplayEventData Payload)
 
     if (Proj)
     {
-        Proj->InitProjectile(CurrentActorInfo->AbilitySystemComponent.Get(), DamageMult);
+        Proj->InitProjectile(CurrentActorInfo->AbilitySystemComponent.Get(), ActiveProjectileData.DamageMultiplier);
         UGameplayStatics::FinishSpawningActor(Proj, FTransform(SpawnRotation, SpawnLocation));
     }
 }

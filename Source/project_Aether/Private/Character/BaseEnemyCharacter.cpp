@@ -259,36 +259,6 @@ AActor* ABaseEnemyCharacter::GetLockedOnTarget() const
 	return nullptr;
 }
 
-void ABaseEnemyCharacter::SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass)
-{
-	NextProjectileClass = ProjectileClass;
-}
-
-TSubclassOf<AActor> ABaseEnemyCharacter::GetNextProjectileClass() const
-{
-	return NextProjectileClass;
-}
-
-void ABaseEnemyCharacter::SetNextDamageMultiplier(float DamageMultiplier)
-{
-	NextDamageMultiplier = DamageMultiplier;
-}
-
-float ABaseEnemyCharacter::GetNextDamageMultiplier() const
-{
-	return NextDamageMultiplier;
-}
-
-void ABaseEnemyCharacter::SetNextSpawnSocketName(FName SocketName)
-{
-	NextSpawnSocketName = SocketName;
-}
-
-FName ABaseEnemyCharacter::GetNextSpawnSocketName() const
-{
-	return NextSpawnSocketName;
-}
-
 void ABaseEnemyCharacter::SetMeleeTraceData(const FMeleeTraceData& Data)
 {
 	CachedMeleeTraceData = Data;
@@ -297,4 +267,14 @@ void ABaseEnemyCharacter::SetMeleeTraceData(const FMeleeTraceData& Data)
 FMeleeTraceData ABaseEnemyCharacter::GetMeleeTraceData() const
 {
 	return CachedMeleeTraceData;
+}
+
+void ABaseEnemyCharacter::SetProjectileData(const FProjectileData& Data)
+{
+	CachedProjectileData = Data;
+}
+
+FProjectileData ABaseEnemyCharacter::GetProjectileData() const
+{
+	return CachedProjectileData;
 }

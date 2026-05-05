@@ -1,6 +1,5 @@
 #include "Abilites/GA_BasicSkill.h"
 #include "AbilitySystemComponent.h"
-#include "Gameplay/IAnimationInterface.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "AbilitySystemBlueprintLibrary.h"
@@ -8,22 +7,31 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "GAS/BaseAttributeSet.h"
+#include "Utility/AetherGASLibrary.h"
 
+#define ECC_Damageable ECC_GameTraceChannel3
 
 UGA_BasicSkill::UGA_BasicSkill()
 {
-	// 어빌리티 태그
-	FGameplayTagContainer AssetTagContainer;
-	AssetTagContainer.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.BasicSkill")));
-	SetAssetTags(AssetTagContainer);
-
+	AbilityTag = FGameplayTag::RequestGameplayTag("Ability.BasicSkill");
 	// 발동 중 상태 태그 부여
 	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Attacking")));
 	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
 	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.FaceTarget")));
-
 	// 인스턴스 정책: 콜백 바인딩을 위해 InstancedPerActor 필수
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+}
+
+void UGA_BasicSkill::PostInitProperties()
+{
+	Super::PostInitProperties();
+	if (AbilityTag.IsValid())
+	{
+		FGameplayTagContainer AssetTagContainer;
+		AssetTagContainer.AddTag(AbilityTag);
+		SetAssetTags(AssetTagContainer);
+	}
 }
 
 void UGA_BasicSkill::ActivateAbility(
@@ -51,8 +59,8 @@ void UGA_BasicSkill::ActivateAbility(
 		return;
 	}
 	
-	const FAbilitySkillData SkillData = AnimChar->GetSkillDataForAbility(
-	FGameplayTag::RequestGameplayTag("Ability.BasicSkill"));
+	
+	const FAbilitySkillData SkillData = AnimChar->GetSkillDataForAbility(AbilityTag);
 	if (!SkillData.Montage)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[GA_BasicSkill] 몽타주 없음"));
@@ -66,18 +74,17 @@ void UGA_BasicSkill::ActivateAbility(
 	bSaveCombo = false;
 	bIsComboWindowOpen = false;
 	bComboTransitioning = false;
+	
 	// 소프트 타겟 갱신 (락온 없을 때만)
+	AActor* EffectiveTarget =  AnimChar->GetLockedOnTarget();
 	if (!ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(
 		FGameplayTag::RequestGameplayTag("State.LockedOn")))
 	{
 		AnimChar->SetNearestTarget();
+		EffectiveTarget = AnimChar->GetNearestTarget();
 	}
 
 	// 유효 타겟 방향으로 캐릭터 회전 (+고정)
-	AActor* EffectiveTarget = AnimChar->GetLockedOnTarget();
-	if (!EffectiveTarget)
-		EffectiveTarget = AnimChar->GetNearestTarget();
-
 	if (ACharacter* Character = Cast<ACharacter>(AvatarActor))
 	{
 		if (EffectiveTarget)
@@ -90,7 +97,6 @@ void UGA_BasicSkill::ActivateAbility(
 			Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 			Character->bUseControllerRotationYaw = false;
 		}
-		// EffectiveTarget 없으면 회전 설정 건드리지 않음 → 정면 그대로 발사
 	}
 	
 	// 1타 몽타주 재생
@@ -103,6 +109,19 @@ void UGA_BasicSkill::ActivateAbility(
 		this, FGameplayTag::RequestGameplayTag("Event.SpawnProjectile"));
 	SpawnTask->EventReceived.AddDynamic(this, &UGA_BasicSkill::OnSpawnProjectile);
 	SpawnTask->ReadyForActivation();
+	
+	// 근접 공격 이벤트 리스너
+	auto* MeleeStartTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+	   this, FGameplayTag::RequestGameplayTag("Event.MeleeTrace.Start"),
+	   nullptr, false,true);
+	MeleeStartTask->EventReceived.AddDynamic(this, &UGA_BasicSkill::OnMeleeTraceStart);
+	MeleeStartTask->ReadyForActivation();
+
+	auto* MeleeEndTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+		this, FGameplayTag::RequestGameplayTag("Event.MeleeTrace.End"),
+		nullptr, false, true);
+	MeleeEndTask->EventReceived.AddDynamic(this, &UGA_BasicSkill::OnMeleeTraceEnd);
+	MeleeEndTask->ReadyForActivation();
 
 	// 콤보 입력 (캐릭터 BasicSkillAction → 이벤트 수신)
 	auto* ComboInputTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
@@ -189,6 +208,141 @@ void UGA_BasicSkill::TryNextCombo()
 	// OnMontageCancelled에서 bComboTransitioning 확인 후 플래그 해제
 }
 
+void UGA_BasicSkill::StartMeleeTrace()
+{
+	if (!CurrentActorInfo) 
+		return;
+	UWorld* World = CurrentActorInfo->AvatarActor.Get()
+		? CurrentActorInfo->AvatarActor->GetWorld() : nullptr;
+	if (!World) 
+		return;
+
+	World->GetTimerManager().ClearTimer(TraceTimerHandle);
+	World->GetTimerManager().SetTimer(
+		TraceTimerHandle,
+		this,
+		&UGA_BasicSkill::DoMeleeTrace,
+		TraceTickRate,
+		true,
+		0.0f); 
+}
+
+void UGA_BasicSkill::StopMeleeTrace()
+{
+	if (!CurrentActorInfo) 
+		return;
+	AActor* Avatar = CurrentActorInfo->AvatarActor.Get();
+	if (Avatar)
+		Avatar->GetWorld()->GetTimerManager().ClearTimer(TraceTimerHandle);
+}
+
+void UGA_BasicSkill::DoMeleeTrace()
+{
+    if (!CurrentActorInfo) 
+        return;
+
+    AActor* Avatar = CurrentActorInfo->AvatarActor.Get();
+    if (!Avatar) 
+        return;
+
+    USkeletalMeshComponent* Mesh = Avatar->FindComponentByClass<USkeletalMeshComponent>();
+    if (!Mesh) 
+        return;
+
+    UWorld* World = Avatar->GetWorld();
+
+    // 소켓 위치 설정
+    FVector TraceStart = Avatar->GetActorLocation();
+    FVector TraceEnd   = Avatar->GetActorLocation();
+
+    if (!ActiveTraceData.StartSocketName.IsNone()
+        && Mesh->DoesSocketExist(ActiveTraceData.StartSocketName))
+        TraceStart = Mesh->GetSocketLocation(ActiveTraceData.StartSocketName);
+    if (!ActiveTraceData.EndSocketName.IsNone()
+        && Mesh->DoesSocketExist(ActiveTraceData.EndSocketName))
+        TraceEnd = Mesh->GetSocketLocation(ActiveTraceData.EndSocketName);
+    // ExtraLength만큼 연장
+    if (ActiveTraceData.ExtraLength > 0.0f)
+    {
+        FVector Dir = (TraceEnd - TraceStart);
+        Dir = Dir.IsNearlyZero() ? Avatar->GetActorForwardVector() : Dir.GetSafeNormal();
+        TraceEnd += Dir * ActiveTraceData.ExtraLength;
+    }
+	
+    // SphereTrace, 멀티 채널로 모든 타겟 탐색(단일 대상이면 SweepSingleByChannel을 사용)
+    TArray<FHitResult> Hits;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(Avatar);
+    const bool bHit = World->SweepMultiByChannel(
+        Hits,
+        TraceStart,
+        TraceEnd,
+        FQuat::Identity,
+        ECC_Damageable,
+        FCollisionShape::MakeSphere(ActiveTraceData.TraceRadius),
+        Params);
+
+    if (bDrawDebugTrace)
+    {
+        const FColor Color = bHit ? FColor::Red : FColor::Green;
+        DrawDebugLine(World, TraceStart, TraceEnd, Color, false, TraceTickRate * 2.0f, 0, 2.0f);
+        DrawDebugSphere(World, TraceStart, ActiveTraceData.TraceRadius, 8, Color, false, TraceTickRate * 2.0f);
+        DrawDebugSphere(World, TraceEnd,   ActiveTraceData.TraceRadius, 8, Color, false, TraceTickRate * 2.0f);
+    }
+
+    for (const FHitResult& Hit : Hits)
+    {
+        AActor* HitActor = Hit.GetActor();
+        if (!HitActor || HitActor == Avatar) 
+            continue;
+        
+        // 중복 방지
+        if (HitActors.Contains(HitActor)) 
+            continue;
+
+        HitActors.Add(HitActor);
+        ApplyMeleeDamage(HitActor, Hit);
+    }
+}
+
+void UGA_BasicSkill::ApplyMeleeDamage(AActor* TargetActor, const FHitResult& HitResult)
+{
+    if (!TargetActor || !MeleeDamageEffect || !CurrentActorInfo) 
+        return;
+    UAbilitySystemComponent* SourceASC = CurrentActorInfo->AbilitySystemComponent.Get();
+    UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+    if (!TargetASC) 
+        return;
+    FGameplayEffectContextHandle ContextHandle = SourceASC
+        ? SourceASC->MakeEffectContext()
+        : TargetASC->MakeEffectContext();
+    ContextHandle.AddHitResult(HitResult);
+    ContextHandle.AddInstigator(CurrentActorInfo->AvatarActor.Get(), CurrentActorInfo->AvatarActor.Get());
+
+    FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(MeleeDamageEffect, 1.0f, ContextHandle);
+    if (!SpecHandle.IsValid()) 
+        return;
+    // 최종 데미지 = Base × (1 + AttackPower/100) × ANS의 DamageMultiplier
+    float FinalDamage = MeleeBaseDamage;
+    if (SourceASC)
+    {
+        if (const UBaseAttributeSet* SourceAttributeSet = SourceASC->GetSet<UBaseAttributeSet>())
+            FinalDamage *= (1.0f + SourceAttributeSet->GetAttackPower() / 100.0f);
+    }
+    FinalDamage *= ActiveTraceData.DamageMultiplier;
+
+    FGameplayTag DamageTag = FGameplayTag::RequestGameplayTag(TEXT("Data.Damage"));
+    SpecHandle.Data.Get()->SetSetByCallerMagnitude(DamageTag, -FinalDamage);
+
+    TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+    UE_LOG(LogTemp, Log, TEXT("[GA_EnemyAttack] 근접 히트 → %s (%.1f 데미지)"),
+        *TargetActor->GetName(), FinalDamage);
+    
+    UAetherGASLibrary::ExecuteGameplayCueWithHitResult(
+        CurrentActorInfo->AvatarActor.Get(), TargetActor, ActiveTraceData.HitCueTag, HitResult);
+}
+
 // ===== 몽타주 콜백 =====
 void UGA_BasicSkill::OnMontageCompleted()
 {
@@ -208,43 +362,60 @@ void UGA_BasicSkill::OnMontageCancelled()
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
+void UGA_BasicSkill::OnMeleeTraceStart(FGameplayEventData Payload)
+{
+	if (!CurrentActorInfo) 
+		return;
+
+	AActor* AvatarActor = CurrentActorInfo->AvatarActor.Get();
+	IAnimationInterface* AnimChar = Cast<IAnimationInterface>(AvatarActor);
+	if (!AnimChar)
+		return;
+    
+	ActiveTraceData = AnimChar->GetMeleeTraceData();
+	HitActors.Empty();
+	StartMeleeTrace();
+}
+
+void UGA_BasicSkill::OnMeleeTraceEnd(FGameplayEventData Payload)
+{
+	StopMeleeTrace();
+	HitActors.Empty();
+}
+
 // ===== 이벤트 콜백 =====
 void UGA_BasicSkill::OnSpawnProjectile(FGameplayEventData Payload)
 {
 	if (!CurrentActorInfo) 
 		return;
+	
 	AActor* AvatarActor = CurrentActorInfo->AvatarActor.Get();
 	IAnimationInterface* AnimChar = Cast<IAnimationInterface>(AvatarActor);
 	if (!AnimChar) 
 		return;
 	
-	TSubclassOf<AActor> ProjectileClass = AnimChar->GetNextProjectileClass();
-	const float DamageMult = AnimChar->GetNextDamageMultiplier();
-	const FName SocketName = AnimChar->GetNextSpawnSocketName();
-	AActor* Target = AnimChar->GetLockedOnTarget();
-	if (!Target)
-		Target = AnimChar->GetNearestTarget();
+	ActiveProjectileData = AnimChar->GetProjectileData();
+	
+	TSubclassOf<AActor> ProjectileClass = ActiveProjectileData.ProjectileClass;
 	if (!ProjectileClass)
 		return;
 	
 	FVector  SpawnLocation = AvatarActor->GetActorLocation();
 	FRotator SpawnRotation = AvatarActor->GetActorRotation();
-	if (!SocketName.IsNone())
+	
+	if (USkeletalMeshComponent* Mesh =
+	AvatarActor->FindComponentByClass<USkeletalMeshComponent>())
 	{
-		if (USkeletalMeshComponent* Mesh =
-			AvatarActor->FindComponentByClass<USkeletalMeshComponent>())
+		if (!ActiveProjectileData.SpawnSocketName.IsNone()
+			&& Mesh->DoesSocketExist(ActiveProjectileData.SpawnSocketName))
 		{
-			if (Mesh->DoesSocketExist(SocketName))
-			{
-				SpawnLocation = Mesh->GetSocketLocation(SocketName);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning,
-					TEXT("[GA_BasicSkill] 소켓 '%s' 없음 → 캐릭터 위치 사용"), *SocketName.ToString());
-			}
+			SpawnLocation = Mesh->GetSocketLocation(ActiveProjectileData.SpawnSocketName);
 		}
 	}
+	
+	AActor* Target = AnimChar->GetLockedOnTarget();
+	if (!Target)
+		Target = AnimChar->GetNearestTarget();
 	// 타겟이 있으면 타겟을 향하도록
 	if (Target)
 	{
@@ -261,14 +432,10 @@ void UGA_BasicSkill::OnSpawnProjectile(FGameplayEventData Payload)
 
 	if (Proj)
 	{
-		UAbilitySystemComponent* SourceASC =
-			CurrentActorInfo->AbilitySystemComponent.Get();
-
 		// 콜리전 활성화 이전에 초기화
-		Proj->InitProjectile(SourceASC, DamageMult);
-
+        Proj->InitProjectile(CurrentActorInfo->AbilitySystemComponent.Get(), ActiveProjectileData.DamageMultiplier);
 		// 이제 BeginPlay 호출 + 콜리전 활성화
-		UGameplayStatics::FinishSpawningActor(Proj, FTransform(SpawnRotation, SpawnLocation));
+        UGameplayStatics::FinishSpawningActor(Proj, FTransform(SpawnRotation, SpawnLocation));
 	}
 }
 

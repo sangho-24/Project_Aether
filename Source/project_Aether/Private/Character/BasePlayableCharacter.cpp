@@ -480,33 +480,6 @@ UAnimMontage* ABasePlayableCharacter::GetNextComboMontage() const
 	return NextComboMontage;
 }
 
-void ABasePlayableCharacter::SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass)
-{
-	NextProjectileClass = ProjectileClass;
-}
-TSubclassOf<AActor> ABasePlayableCharacter::GetNextProjectileClass() const
-{
-	return NextProjectileClass;
-}
-
-void ABasePlayableCharacter::SetNextDamageMultiplier(float DamageMultiplier)
-{
-	NextDamageMultiplier = DamageMultiplier;
-}
-float ABasePlayableCharacter::GetNextDamageMultiplier() const
-{
-	return NextDamageMultiplier;
-}
-
-void ABasePlayableCharacter::SetNextSpawnSocketName(FName SocketName)
-{
-	NextSpawnSocketName = SocketName;
-}
-FName ABasePlayableCharacter::GetNextSpawnSocketName() const
-{
-	return NextSpawnSocketName;
-}
-
 AActor* ABasePlayableCharacter::GetLockedOnTarget() const
 {
 	return LockOnTarget;
@@ -556,4 +529,24 @@ void ABasePlayableCharacter::SetNearestTarget()
 			}
 		}
 		NearestTarget = NearestActor;
+}
+
+void ABasePlayableCharacter::SetMeleeTraceData(const FMeleeTraceData& Data)
+{
+	CachedMeleeTraceData = Data;
+}
+
+FMeleeTraceData ABasePlayableCharacter::GetMeleeTraceData() const
+{
+	return CachedMeleeTraceData;
+}
+
+void ABasePlayableCharacter::SetProjectileData(const FProjectileData& Data)
+{
+	CachedProjectileData = Data;
+}
+
+FProjectileData ABasePlayableCharacter::GetProjectileData() const
+{
+	return CachedProjectileData;
 }

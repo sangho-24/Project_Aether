@@ -120,13 +120,8 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> NextComboMontage = nullptr;
 	
-	UPROPERTY()
-	TSubclassOf<AActor> NextProjectileClass;
-	
-	UPROPERTY()
-	FName NextSpawnSocketName;
-	
-	float NextDamageMultiplier = 1.0f;
+	FMeleeTraceData CachedMeleeTraceData;
+	FProjectileData CachedProjectileData;
 	
 	// ===== UI =====
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Setup")
@@ -167,15 +162,13 @@ public:
 	virtual FAbilitySkillData GetSkillDataForAbility(FGameplayTag AbilityTag) override;
 	virtual void SetNextComboMontage(UAnimMontage* Montage) override;
 	virtual UAnimMontage* GetNextComboMontage() const override;
-	virtual void SetNextProjectileClass(TSubclassOf<AActor> ProjectileClass) override;
-	virtual TSubclassOf<AActor> GetNextProjectileClass() const override;
-	virtual void SetNextDamageMultiplier(float DamageMultiplier) override;
-	virtual float GetNextDamageMultiplier() const override;
-	virtual void SetNextSpawnSocketName(FName SocketName) override;
-	virtual FName GetNextSpawnSocketName() const override;
 	virtual AActor* GetLockedOnTarget() const override;
 	virtual AActor* GetNearestTarget() const override;
 	virtual void SetNearestTarget() override;
+	virtual void SetMeleeTraceData(const FMeleeTraceData& Data) override;
+	virtual FMeleeTraceData GetMeleeTraceData() const override;
+	virtual void SetProjectileData(const FProjectileData& Data)  override;
+	virtual FProjectileData GetProjectileData() const override;
 	
 	// IGenericTeamAgentInterface
 	virtual FGenericTeamId GetGenericTeamId() const override {return FGenericTeamId(0);}

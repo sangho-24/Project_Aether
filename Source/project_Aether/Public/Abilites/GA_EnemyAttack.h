@@ -42,13 +42,15 @@ protected:
 	float TraceTickRate = 0.033f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Attack|Debug")
-	bool bDrawDebugTrace = true;
+	bool bDrawDebugTrace = false;
 
 private:
 	TWeakObjectPtr<AActor> AttackTarget;
 	
-	// 근접공격 데이터
+	//노티파이 데이터
+	FProjectileData ActiveProjectileData;
 	FMeleeTraceData ActiveTraceData;
+	
 	TArray<TWeakObjectPtr<AActor>> HitActors;   // 중복 피해 방지
 	FTimerHandle TraceTimerHandle;
 	
